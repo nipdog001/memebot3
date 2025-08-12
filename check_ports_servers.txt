@@ -1,0 +1,123 @@
+# check_ports.ps1 - Check what servers are running on which ports
+Write-Host "🔍 CHECKING RUNNING SERVERS AND PORTS" -ForegroundColor Cyan
+Write-Host "=====================================" -ForegroundColor Cyan
+
+Write-Host "`n1. CHECKING NODE.JS PROCESSES" -ForegroundColor Green
+Write-Host "------------------------------" -ForegroundColor DarkGray
+
+$nodeProcesses = Get-Process node -ErrorAction SilentlyContinue
+if ($nodeProcesses) {
+    Write-Host "Found $($nodeProcesses.Count) Node.js process(es):" -ForegroundColor Yellow
+    foreach ($proc in $nodeProcesses) {
+        Write-Host "   PID: $($proc.Id) | CPU: $($proc.CPU) | Memory: $([math]::Round($proc.WorkingSet/1MB, 2))MB" -ForegroundColor White
+    }
+} else {
+    Write-Host "No Node.js processes currently running" -ForegroundColor Gray
+}
+
+Write-Host "`n2. CHECKING LISTENING PORTS" -ForegroundColor Green
+Write-Host "----------------------------" -ForegroundColor DarkGray
+
+# Common ports for web servers
+$commonPorts = @(3000, 3001, 8000, 8080, 5000, 4000, 3333)
+
+foreach ($port in $commonPorts) {
+    try {
+        $connection = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        if ($connection) {
+            Write-Host "Port $port`: LISTENING (PID: $($connection.OwningProcess))" -ForegroundColor Green
+            
+            # Try to identify what's running on this port
+            try {
+                $process = Get-Process -Id $connection.OwningProcess -ErrorAction SilentlyContinue
+                if ($process) {
+                    Write-Host "   Process: $($process.ProcessName)" -ForegroundColor White
+                }
+            } catch {
+                Write-Host "   Process: Unknown" -ForegroundColor Gray
+            }
+        }
+    } catch {
+        # Port not in use
+    }
+}
+
+Write-Host "`n3. TESTING DASHBOARD ENDPOINTS" -ForegroundColor Green
+Write-Host "------------------------------" -ForegroundColor DarkGray
+
+$testPorts = @(3000, 3001, 8000, 8080)
+
+foreach ($testPort in $testPorts) {
+    Write-Host "Testing localhost:$testPort..." -ForegroundColor Yellow
+    
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:$testPort" -TimeoutSec 3 -ErrorAction SilentlyContinue
+        if ($response.StatusCode -eq 200) {
+            Write-Host "   ✅ RESPONDING on port $testPort" -ForegroundColor Green
+            
+            # Check if it's serving your dashboard
+            if ($response.Content -match "Trading|Dashboard|Meme.*Bot") {
+                Write-Host "   🎯 This appears to be your trading dashboard!" -ForegroundColor Cyan
+            }
+        }
+    } catch {
+        Write-Host "   ❌ Not responding on port $testPort" -ForegroundColor Red
+    }
+    
+    # Test API endpoints
+    try {
+        $apiResponse = Invoke-WebRequest -Uri "http://localhost:$testPort/api/stats" -TimeoutSec 3 -ErrorAction SilentlyContinue
+        if ($apiResponse.StatusCode -eq 200) {
+            Write-Host "   📊 /api/stats endpoint available" -ForegroundColor Green
+            
+            # Check if the response contains suspicious data
+            $content = $apiResponse.Content
+            if ($content -match "100%" -or $content -match "1070") {
+                Write-Host "   🚨 THIS PORT HAS THE FAKE DATA!" -ForegroundColor Red
+            } else {
+                Write-Host "   ✅ This might have real data" -ForegroundColor Green
+            }
+        }
+    } catch {
+        # API endpoint not available
+    }
+}
+
+Write-Host "`n4. CHECKING BROWSER CONNECTIONS" -ForegroundColor Green
+Write-Host "-------------------------------" -ForegroundColor DarkGray
+
+Write-Host "Check which URL you're accessing in your browser:" -ForegroundColor Yellow
+Write-Host "• http://localhost:3000 - Common for development servers" -ForegroundColor White
+Write-Host "• http://localhost:3001 - Common for API servers" -ForegroundColor White  
+Write-Host "• http://localhost:8080 - Common for build/production servers" -ForegroundColor White
+
+Write-Host "`n5. PACKAGE.JSON SERVER CONFIGURATION" -ForegroundColor Green
+Write-Host "------------------------------------" -ForegroundColor DarkGray
+
+if (Test-Path "package.json") {
+    try {
+        $pkg = Get-Content "package.json" | ConvertFrom-Json
+        if ($pkg.scripts) {
+            Write-Host "Your package.json scripts:" -ForegroundColor Yellow
+            $pkg.scripts.PSObject.Properties | ForEach-Object {
+                Write-Host "   $($_.Name): $($_.Value)" -ForegroundColor White
+                
+                if ($_.Value -match "server" -and $_.Value -match "enhanced") {
+                    Write-Host "      👆 This is your REAL server!" -ForegroundColor Green
+                }
+            }
+        }
+    } catch {
+        Write-Host "Could not parse package.json" -ForegroundColor Red
+    }
+}
+
+Write-Host "`n=====================================" -ForegroundColor Cyan
+Write-Host "DIAGNOSTIC COMPLETE" -ForegroundColor Cyan
+Write-Host "=====================================" -ForegroundColor Cyan
+
+Write-Host "`nRECOMMENDED ACTIONS:" -ForegroundColor Green
+Write-Host "1. Stop all servers: Get-Process node | Stop-Process -Force" -ForegroundColor White
+Write-Host "2. Start the correct server: npm run start" -ForegroundColor White
+Write-Host "3. Check which port responds with real data (not 100% win rate)" -ForegroundColor White
+Write-Host "4. Update your browser bookmark to use the correct port" -ForegroundColor White
