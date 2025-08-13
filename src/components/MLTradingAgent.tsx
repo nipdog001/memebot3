@@ -224,7 +224,7 @@ export default function MLTradingAgent({
   };
 
   const scanMarket = async () => {
-    if (!isActive || enabledPairs.length === 0 || enabledExchanges.length === 0) return;
+    if (!isActive || (enabledPairs || []).length === 0 || (enabledExchanges || []).length === 0) return;
     
     // Reload learned model data before each scan for latest improvements
     loadLearnedModelData();
@@ -235,8 +235,8 @@ export default function MLTradingAgent({
       // Get real market data from exchange data service
       const newMarketData: MarketData[] = [];
       
-      for (const exchange of enabledExchanges) {
-        for (const symbol of enabledPairs) {
+      for (const exchange of (enabledExchanges || [])) {
+        for (const symbol of (enabledPairs || [])) {
           // Get real market data from exchange data service
           const realData = exchangeDataService.getMarketData(exchange, symbol);
           

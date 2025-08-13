@@ -731,7 +731,7 @@ export default function App() {
     initializeMLModels();
     initializeExchanges();
     initializeSocialSignals();
-  }, []);
+  }, []); // Empty dependency array to run only once
   
   const getDefaultMLModels = (): MLModel[] => [
     { type: 'linear_regression', name: 'Linear Regression', accuracy: 72.5, predictions: 1247, profitGenerated: 2847.32, enabled: true },

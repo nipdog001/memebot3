@@ -79,8 +79,8 @@ export default function TradingTab({
   } = usePersistentStats();
 
   const currentBalance = isPaperTrading ? balance : liveBalance;
-  const enabledExchanges = exchanges.filter(e => e.enabled && e.connected);
-  const enabledMLModels = mlModels.filter(m => m.enabled);
+  const enabledExchanges = (exchanges || []).filter(e => e.enabled && e.connected);
+  const enabledMLModels = (mlModels || []).filter(m => m.enabled);
   const allPairs = updatedTradingPairs.exchanges ? Object.values(updatedTradingPairs.exchanges).flat() : [];
   const enabledPairs = allPairs.filter((p: any) => p.enabled);
 

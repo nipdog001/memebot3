@@ -65,7 +65,9 @@ export default function DatabaseStatus() {
 
   const checkDatabaseStatus = async () => {
     setIsLoading(true);
-    
+      const response = await fetch('/api/database/status').catch(() => {
+        throw new Error('Server not available');
+      });
     try {
       // Try to get database status from server
       const response = await fetch(`${API_BASE_URL}/api/database/status`);
@@ -111,7 +113,7 @@ export default function DatabaseStatus() {
         throw new Error(`Server returned ${response.status}`);
       }
     } catch (error) {
-      console.error('Error checking database status:', error);
+      console.warn('Database status check failed (server may be starting):', error.message);
       
       // Fallback to localStorage status
       const connection: DatabaseConnection = {
