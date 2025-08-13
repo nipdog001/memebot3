@@ -273,7 +273,7 @@ export default function MLTradingAgent({
       updateMarketTrends(newMarketData);
       
       // Generate ML predictions
-      const newPredictions = generateMLPredictions(newMarketData, mlModels);
+      const newPredictions = generateMLPredictions(newMarketData, mlModels || []);
       setPredictions(newPredictions);
       
       // Find trading opportunities

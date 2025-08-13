@@ -3,6 +3,7 @@
 // JavaScript version - no TypeScript
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { io } from 'socket.io-client';
 
 export const useWebSocketStats = () => {
   const [stats, setStats] = useState({
@@ -32,49 +33,50 @@ export const useWebSocketStats = () => {
   
   // Connect to WebSocket
   const connect = useCallback(() => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
+    if (ws.current?.connected) {
+      console.log('Socket.IO already connected');
       return;
     }
     
-    // Railway-ready WebSocket URL
-    const wsUrl = process.env.NODE_ENV === 'production' 
-      ? `wss://${window.location.host}/ws`
-      : 'ws://localhost:3001/ws';
+    // Socket.IO connection URL
+    const serverUrl = process.env.NODE_ENV === 'production' 
+      ? `https://${window.location.hostname}`
+      : `http://${window.location.hostname}:3001`;
     
-    console.log('🔌 Connecting to WebSocket:', wsUrl);
+    console.log('🔌 Connecting to Socket.IO server:', serverUrl);
     
     try {
-      ws.current = new WebSocket(wsUrl);
+      ws.current = io(serverUrl, {
+        path: '/ws',
+        transports: ['websocket', 'polling']
+      });
       
-      ws.current.onopen = () => {
-        console.log('✅ WebSocket connected');
+      ws.current.on('connect', () => {
+        console.log('✅ Socket.IO connected');
         setIsConnected(true);
         reconnectAttempts.current = 0;
         
         // Request initial stats
-        ws.current?.send(JSON.stringify({
+        ws.current?.emit('message', {
           type: 'request_stats'
-        }));
-      };
+        });
+      });
       
-      ws.current.onmessage = (event) => {
+      ws.current.on('message', (message) => {
         try {
-          const message = JSON.parse(event.data);
           handleMessage(message);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('Error handling Socket.IO message:', error);
         }
-      };
+      });
       
-      ws.current.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
-      };
+      ws.current.on('connect_error', (error) => {
+        console.error('❌ Socket.IO connection error:', error);
+      });
       
-      ws.current.onclose = () => {
-        console.log('🔌 WebSocket disconnected');
+      ws.current.on('disconnect', () => {
+        console.log('🔌 Socket.IO disconnected');
         setIsConnected(false);
-        ws.current = null;
         
         // Attempt to reconnect
         if (reconnectAttempts.current < maxReconnectAttempts) {
@@ -86,9 +88,9 @@ export const useWebSocketStats = () => {
             connect();
           }, delay);
         }
-      };
+      });
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      console.error('Failed to create Socket.IO connection:', error);
       setIsConnected(false);
     }
   }, []);
@@ -189,11 +191,11 @@ export const useWebSocketStats = () => {
   
   // Send message to server
   const sendMessage = useCallback((message) => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(message));
+    if (ws.current?.connected) {
+      ws.current.emit('message', message);
       console.log('📤 Sent to server:', message.type);
     } else {
-      console.warn('WebSocket not connected, message not sent:', message);
+      console.warn('Socket.IO not connected, message not sent:', message);
       // Try to reconnect
       connect();
     }
@@ -275,7 +277,7 @@ export const useWebSocketStats = () => {
         clearTimeout(reconnectTimeout.current);
       }
       if (ws.current) {
-        ws.current.close();
+        ws.current.disconnect();
       }
     };
   }, [connect]);
@@ -294,8 +296,8 @@ export const useWebSocketStats = () => {
   // Heartbeat to keep connection alive
   useEffect(() => {
     const heartbeat = setInterval(() => {
-      if (ws.current?.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify({ type: 'ping' }));
+      if (ws.current?.connected) {
+        ws.current.emit('message', { type: 'ping' });
       }
     }, 45000); // Send ping every 45 seconds
     

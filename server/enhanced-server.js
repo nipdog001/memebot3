@@ -4,7 +4,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { WebSocketServer } from 'ws';
+import { Server } from 'socket.io';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,8 +22,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Create HTTP server
 const server = http.createServer(app);
 
-// Create WebSocket server for real-time updates
-const wss = new WebSocketServer({ server, path: '/ws' });
+// Create Socket.IO server for real-time updates
+const io = new Server(server, {
+    path: '/ws',
+    cors: {
+        origin: process.env.NODE_ENV === 'production' 
+            ? process.env.FRONTEND_URL || '*'
+            : true,
+        credentials: true
+    }
+});
 
 // Middleware
 app.use(cors({
@@ -176,20 +184,18 @@ function startStatsUpdateLoop() {
 }
 
 // WebSocket connection handling
-wss.on('connection', (ws) => {
-    console.log('🔌 New WebSocket connection');
+io.on('connection', (socket) => {
+    console.log('🔌 New Socket.IO connection');
     
     // Send initial stats on connection
-    ws.send(JSON.stringify({
+    socket.emit('message', {
         type: 'initial_stats',
         data: globalStats
-    }));
+    });
     
     // Handle messages from client
-    ws.on('message', async (message) => {
+    socket.on('message', async (data) => {
         try {
-            const data = JSON.parse(message);
-            
             switch (data.type) {
                 case 'start_trading':
                     // Start trading with specified parameters
@@ -208,30 +214,25 @@ wss.on('connection', (ws) => {
                     
                 case 'request_stats':
                     // Send current stats
-                    ws.send(JSON.stringify({
+                    socket.emit('message', {
                         type: 'stats_update',
                         data: globalStats
-                    }));
+                    });
                     break;
             }
         } catch (error) {
-            console.error('WebSocket message error:', error);
+            console.error('Socket.IO message error:', error);
         }
     });
     
-    ws.on('close', () => {
-        console.log('🔌 WebSocket connection closed');
+    socket.on('disconnect', () => {
+        console.log('🔌 Socket.IO connection closed');
     });
 });
 
 // Broadcast to all connected clients
 function broadcastToClients(data) {
-    const message = JSON.stringify(data);
-    wss.clients.forEach((client) => {
-        if (client.readyState === 1) { // WebSocket.OPEN
-            client.send(message);
-        }
-    });
+    io.emit('message', data);
 }
 
 // ============= API ROUTES =============
