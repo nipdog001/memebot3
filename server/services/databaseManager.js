@@ -248,6 +248,7 @@ class DatabaseManager {
             // Check if we have existing data in the database
             const existingStats = await this.getTradingStats('default');
             
+            if (!existingStats) {
                 await this.initializeSQLite();
             }
         } catch (error) {
