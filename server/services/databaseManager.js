@@ -292,7 +292,8 @@ class DatabaseManager {
             return result.rows;
         } else {
             if (!this.db) {
-                throw new Error('SQLite database instance is null');
+                console.error('SQLite database instance is null, cannot execute query');
+                return [];
             }
             if (sql.toLowerCase().startsWith('select')) {
                 return await this.db.all(sql, params);
