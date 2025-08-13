@@ -248,10 +248,23 @@ class DatabaseManager {
 
     // Universal query method that works with both databases
     async query(sql, params = []) {
+        if (!this.isInitialized) {
+            console.warn('Database not initialized, skipping query');
+            return [];
+        }
+        
         if (this.isPostgres) {
+            if (!this.pgClient) {
+                console.warn('PostgreSQL client not available, skipping query');
+                return [];
+            }
             const result = await this.pgClient.query(sql, params);
             return result.rows;
         } else {
+            if (!this.db) {
+                console.warn('SQLite database not available, skipping query');
+                return [];
+            }
             if (sql.toLowerCase().startsWith('select')) {
                 return await this.db.all(sql, params);
             } else {
@@ -262,10 +275,23 @@ class DatabaseManager {
 
     // Universal get single row method
     async get(sql, params = []) {
+        if (!this.isInitialized) {
+            console.warn('Database not initialized, skipping get query');
+            return null;
+        }
+        
         if (this.isPostgres) {
+            if (!this.pgClient) {
+                console.warn('PostgreSQL client not available, skipping get query');
+                return null;
+            }
             const result = await this.pgClient.query(sql, params);
             return result.rows[0] || null;
         } else {
+            if (!this.db) {
+                console.warn('SQLite database not available, skipping get query');
+                return null;
+            }
             return await this.db.get(sql, params);
         }
     }
@@ -273,6 +299,11 @@ class DatabaseManager {
     // Save trading statistics
     async saveTradingStats(userId = 'default', stats) {
         try {
+            if (!this.isInitialized) {
+                console.warn('Database not initialized, cannot save trading stats');
+                return false;
+            }
+            
             let sql;
             let params;
             

@@ -124,6 +124,12 @@ export default function MLTradingAgent({
         updateRealDataStatus();
       }).catch(error => {
         console.error('❌ Error initializing exchange data service:', error);
+        setRealDataStatus({
+          isUsingRealData: false,
+          lastUpdate: null,
+          dataPoints: 0,
+          apiStatus: 'error'
+        });
       });
       
     } catch (error) {

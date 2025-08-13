@@ -88,8 +88,8 @@ export default function TradingTab({
     setUpdatedTradingPairs(tradingPairs);
   }, [tradingPairs]);
 
-  const recentTrades = trades.slice(0, 10);
-  const todaysTrades = trades.filter(trade => {
+  const recentTrades = (trades || []).slice(0, 10);
+  const todaysTrades = (trades || []).filter(trade => {
     const today = new Date().toDateString();
     const tradeDate = new Date(trade.timestamp).toDateString();
     return today === tradeDate;
