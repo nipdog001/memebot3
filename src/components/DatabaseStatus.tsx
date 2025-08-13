@@ -16,9 +16,9 @@ import {
 } from 'lucide-react';
 
 // Define API base URL based on environment
-const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3001' 
-  : '';
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? ''
+  : `http://${window.location.hostname}:3001`;
 
 interface DatabaseConnection {
   id: string;

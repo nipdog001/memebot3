@@ -361,9 +361,10 @@ const useWebSocketStats = () => {
       return;
     }
     
+    // Use the same host as the frontend but on port 3001 for development
     const wsUrl = process.env.NODE_ENV === 'production' 
       ? `wss://${window.location.host}/ws`
-      : 'ws://localhost:3001/ws';
+      : `ws://${window.location.hostname}:3001/ws`;
     
     console.log('🔌 Connecting to WebSocket:', wsUrl);
     
