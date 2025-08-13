@@ -1,7 +1,7 @@
 // server/services/mlTradingService.js
 // Enhanced ML Trading Service with Real Exchange Data Integration
 
-import * as tf from '@tensorflow/tfjs-node';
+// import * as tf from '@tensorflow/tfjs-node'; // Disabled - not supported in WebContainer
 import ccxt from 'ccxt';
 import EventEmitter from 'events';
 
