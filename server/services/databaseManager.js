@@ -2,7 +2,7 @@
 // Railway-Ready Database Manager - Supports both PostgreSQL (Railway) and SQLite (local)
 
 import pg from 'pg';
-import sqlite3 from 'sqlite3';
+import SQLite3Driver from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -67,7 +67,7 @@ class DatabaseManager {
         
         this.db = await open({
             filename: path.join(dataDir, 'memebot.db'),
-            driver: sqlite3.Database
+            driver: SQLite3Driver.Database
         });
         
         this.isPostgres = false;
