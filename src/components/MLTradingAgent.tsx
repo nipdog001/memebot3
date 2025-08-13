@@ -119,7 +119,7 @@ export default function MLTradingAgent({
       }
       
       // Initialize exchange data service
-      exchangeDataService.initializeExchanges().then(() => {
+      exchangeDataService.initialize().then(() => {
         console.log('🔌 Exchange data service initialized');
         updateRealDataStatus();
       }).catch(error => {
