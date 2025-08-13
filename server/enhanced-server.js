@@ -520,16 +520,29 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Start server
-server.listen(PORT, async () => {
-    console.log(`🚀 Enhanced server running on port ${PORT}`);
-    console.log(`📡 WebSocket server available at ws://localhost:${PORT}/ws`);
-    console.log(`🌐 API endpoints available at http://localhost:${PORT}/api/`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
-    
-    // Initialize all services
-    await initializeServices();
-});
+async function startServer() {
+    try {
+        // Initialize all services BEFORE starting the server
+        console.log('🚀 Initializing services...');
+        await initializeServices();
+        
+        // Only start listening after all services are ready
+        server.listen(PORT, () => {
+            console.log(`🚀 Enhanced server running on port ${PORT}`);
+            console.log(`📡 WebSocket server available at ws://localhost:${PORT}/ws`);
+            console.log(`🌐 API endpoints available at http://localhost:${PORT}/api/`);
+            console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+            console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
+            console.log('✅ Server ready to accept connections');
+        });
+    } catch (error) {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+// Start the server
+startServer();
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
