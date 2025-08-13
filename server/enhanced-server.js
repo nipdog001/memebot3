@@ -10,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import ccxtIntegration from './services/ccxtIntegration.js';
 import mlTradingService from './services/mlTradingService.js';
+import realDataTracker from './services/realDataTracker.js';
 import databaseManager from './services/databaseManager.js';
 
 dotenv.config();
