@@ -1126,7 +1126,7 @@ export default function App() {
             <div className="space-y-6">
               <ExchangeManager
                 exchanges={exchanges}
-                onUpdateExchanges={setExchanges}
+                onExchangeUpdate={setExchanges}
                 userTier={userTier}
                 isAdmin={isAdmin}
               />

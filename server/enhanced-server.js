@@ -576,6 +576,38 @@ app.get('/api/stream', (req, res) => {
     });
 });
 
+// Add missing trading pairs API endpoint
+app.get('/api/trading/pairs', async (req, res) => {
+    try {
+        const tradingPairs = {
+            exchanges: {
+                coinbase: [
+                    { symbol: 'DOGE/USDT', enabled: true, price: 0.08234 },
+                    { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
+                    { symbol: 'PEPE/USDT', enabled: true, price: 0.0000089 },
+                    { symbol: 'FLOKI/USDT', enabled: true, price: 0.000156 }
+                ],
+                kraken: [
+                    { symbol: 'DOGE/USDT', enabled: true, price: 0.08235 },
+                    { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
+                    { symbol: 'PEPE/USDT', enabled: false, price: 0.0000089 },
+                    { symbol: 'FLOKI/USDT', enabled: true, price: 0.000156 }
+                ],
+                binanceus: [
+                    { symbol: 'DOGE/USDT', enabled: true, price: 0.08236 },
+                    { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
+                    { symbol: 'PEPE/USDT', enabled: true, price: 0.0000089 },
+                    { symbol: 'FLOKI/USDT', enabled: false, price: 0.000156 }
+                ]
+            }
+        };
+        res.json(tradingPairs);
+    } catch (error) {
+        console.error('Error getting trading pairs:', error);
+        res.status(500).json({ error: 'Failed to get trading pairs' });
+    }
+});
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
