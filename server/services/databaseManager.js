@@ -6,6 +6,7 @@ import SQLite3Driver from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,8 +86,8 @@ class DatabaseManager {
             const dataDir = path.join(process.cwd(), 'data');
             
             // Ensure data directory exists
-            if (!require('fs').existsSync(dataDir)) {
-                require('fs').mkdirSync(dataDir, { recursive: true });
+            if (!fs.existsSync(dataDir)) {
+                fs.mkdirSync(dataDir, { recursive: true });
             }
             
             // Use the sqlite package's open function properly
