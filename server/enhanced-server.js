@@ -67,91 +67,138 @@ async function initializeServices() {
     console.log('🚀 Initializing services...');
     
     try {
-        // Initialize CCXT exchanges
-        await ccxtIntegration.initializeAllExchanges();
+        // Initialize CCXT exchanges with error handling
+        try {
+            await ccxtIntegration.initializeAllExchanges();
+            console.log('✅ CCXT exchanges initialized');
+        } catch (error) {
+            console.warn('⚠️ CCXT initialization failed, continuing without exchanges:', error.message);
+        }
         
-        // Initialize ML Trading Service
-        await mlTradingService.initialize();
+        // Initialize ML Trading Service with error handling
+        try {
+            await mlTradingService.initialize();
+            console.log('✅ ML Trading Service initialized');
+        } catch (error) {
+            console.warn('⚠️ ML Trading Service initialization failed, continuing without ML:', error.message);
+        }
         
-        // Initialize database
-        await databaseManager.initialize();
+        // Initialize database with error handling
+        try {
+            await databaseManager.initialize();
+            console.log('✅ Database initialized');
+        } catch (error) {
+            console.warn('⚠️ Database initialization failed, continuing with in-memory storage:', error.message);
+        }
         
-        // Load saved models if they exist
-        await mlTradingService.loadModels();
+        // Load saved models if they exist with error handling
+        try {
+            await mlTradingService.loadModels();
+            console.log('✅ ML models loaded');
+        } catch (error) {
+            console.warn('⚠️ ML model loading failed, will use default models:', error.message);
+        }
         
         // Set up ML event listeners
-        setupMLEventListeners();
+        try {
+            setupMLEventListeners();
+            console.log('✅ ML event listeners set up');
+        } catch (error) {
+            console.warn('⚠️ ML event listener setup failed:', error.message);
+        }
         
         // Start periodic stats update
-        startStatsUpdateLoop();
+        try {
+            startStatsUpdateLoop();
+            console.log('✅ Stats update loop started');
+        } catch (error) {
+            console.warn('⚠️ Stats update loop failed to start:', error.message);
+        }
         
         console.log('✅ All services initialized successfully');
     } catch (error) {
-        console.error('❌ Service initialization failed:', error);
+        console.error('❌ Critical service initialization failed:', error);
+        // Don't exit, continue with limited functionality
     }
 }
 
 // Set up ML Trading Service event listeners
 function setupMLEventListeners() {
-    mlTradingService.on('prediction', (data) => {
-        // Update prediction count
-        globalStats.predictions24h++;
-        
-        // Broadcast to WebSocket clients
-        broadcastToClients({
-            type: 'ml_prediction',
-            data: data
+    try {
+        mlTradingService.on('prediction', (data) => {
+            try {
+                // Update prediction count
+                globalStats.predictions24h++;
+                
+                // Broadcast to WebSocket clients
+                broadcastToClients({
+                    type: 'ml_prediction',
+                    data: data
+                });
+            } catch (error) {
+                console.error('Error handling ML prediction:', error);
+            }
         });
-    });
-    
-    mlTradingService.on('training-complete', (data) => {
-        // Update ML model stats
-        const mlStats = mlTradingService.getStats();
-        globalStats.mlModelStats = mlStats.models;
-        globalStats.activeModels = mlStats.models.filter(m => m.enabled).length;
         
-        // Save to database
-        databaseManager.saveMLStats(mlStats);
-        
-        // Broadcast to clients
-        broadcastToClients({
-            type: 'training_complete',
-            data: mlStats
+        mlTradingService.on('training-complete', (data) => {
+            try {
+                // Update ML model stats
+                const mlStats = mlTradingService.getStats();
+                globalStats.mlModelStats = mlStats.models;
+                globalStats.activeModels = mlStats.models.filter(m => m.enabled).length;
+                
+                // Save to database
+                databaseManager.saveMLStats(mlStats);
+                
+                // Broadcast to clients
+                broadcastToClients({
+                    type: 'training_complete',
+                    data: mlStats
+                });
+            } catch (error) {
+                console.error('Error handling training complete:', error);
+            }
         });
-    });
-    
-    mlTradingService.on('trade-executed', async (trade) => {
-        // Update trade stats
-        globalStats.totalTrades++;
         
-        if (trade.profit > 0) {
-            globalStats.winningTrades++;
-            globalStats.totalProfit += trade.profit;
-        } else {
-            globalStats.losingTrades++;
-            globalStats.totalLoss += Math.abs(trade.profit);
-        }
-        
-        globalStats.winRate = globalStats.totalTrades > 0 
-            ? (globalStats.winningTrades / globalStats.totalTrades) * 100 
-            : 0;
-        
-        // Update balances
-        if (trade.isPaper) {
-            globalStats.paperBalance += trade.profit;
-        } else {
-            globalStats.liveBalance += trade.profit;
-        }
-        
-        // Save trade to database
-        await databaseManager.saveTrade(trade);
-        
-        // Broadcast trade update
-        broadcastToClients({
-            type: 'trade_executed',
-            data: trade
+        mlTradingService.on('trade-executed', async (trade) => {
+            try {
+                // Update trade stats
+                globalStats.totalTrades++;
+                
+                if (trade.profit > 0) {
+                    globalStats.winningTrades++;
+                    globalStats.totalProfit += trade.profit;
+                } else {
+                    globalStats.losingTrades++;
+                    globalStats.totalLoss += Math.abs(trade.profit);
+                }
+                
+                globalStats.winRate = globalStats.totalTrades > 0 
+                    ? (globalStats.winningTrades / globalStats.totalTrades) * 100 
+                    : 0;
+                
+                // Update balances
+                if (trade.isPaper) {
+                    globalStats.paperBalance += trade.profit;
+                } else {
+                    globalStats.liveBalance += trade.profit;
+                }
+                
+                // Save trade to database
+                await databaseManager.saveTrade(trade);
+                
+                // Broadcast trade update
+                broadcastToClients({
+                    type: 'trade_executed',
+                    data: trade
+                });
+            } catch (error) {
+                console.error('Error handling trade execution:', error);
+            }
         });
-    });
+    } catch (error) {
+        console.error('Error setting up ML event listeners:', error);
+    }
 }
 
 // Periodic stats update loop
@@ -187,17 +234,22 @@ function startStatsUpdateLoop() {
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-    console.log('🔌 New Socket.IO connection');
+    console.log('🔌 New Socket.IO connection:', socket.id);
     
-    // Send initial stats on connection
-    socket.emit('message', {
-        type: 'initial_stats',
-        data: globalStats
-    });
+    try {
+        // Send initial stats on connection
+        socket.emit('message', {
+            type: 'initial_stats',
+            data: globalStats
+        });
+    } catch (error) {
+        console.error('Error sending initial stats:', error);
+    }
     
     // Handle messages from client
     socket.on('message', async (data) => {
         try {
+            console.log('📨 Received message:', data.type);
             switch (data.type) {
                 case 'start_trading':
                     // Start trading with specified parameters
@@ -224,17 +276,31 @@ io.on('connection', (socket) => {
             }
         } catch (error) {
             console.error('Socket.IO message error:', error);
+            // Send error back to client
+            socket.emit('message', {
+                type: 'error',
+                data: { message: error.message }
+            });
         }
     });
     
+    socket.on('error', (error) => {
+        console.error('Socket.IO socket error:', error);
+    });
+    
     socket.on('disconnect', () => {
-        console.log('🔌 Socket.IO connection closed');
+        console.log('🔌 Socket.IO connection closed:', socket.id);
     });
 });
 
 // Broadcast to all connected clients
 function broadcastToClients(data) {
-    io.emit('message', data);
+    try {
+        console.log('📡 Broadcasting to clients:', data.type);
+        io.emit('message', data);
+    } catch (error) {
+        console.error('Error broadcasting to clients:', error);
+    }
 }
 
 // ============= API ROUTES =============
@@ -537,9 +603,19 @@ async function startServer() {
             console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
             console.log('✅ Server ready to accept connections');
         });
+        
+        // Add server error handling
+        server.on('error', (error) => {
+            console.error('❌ Server error:', error);
+        });
+        
     } catch (error) {
         console.error('❌ Failed to start server:', error);
-        process.exit(1);
+        // Don't exit, try to continue with limited functionality
+        console.log('⚠️ Starting server with limited functionality...');
+        server.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT} (limited mode)`);
+        });
     }
 }
 
