@@ -62,7 +62,7 @@ export default function MLTradingAgent({
   balance, 
   enabledPairs, 
   enabledExchanges, 
-  mlModels, 
+  mlModels = [], 
   onTradeExecuted 
 }: MLTradingAgentProps) {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
@@ -201,7 +201,7 @@ export default function MLTradingAgent({
         clearInterval(scanIntervalRef.current);
       }
     };
-  }, [isActive, enabledPairs.length, enabledExchanges.length, mlModels.length, confidenceThreshold]);
+  }, [isActive, enabledPairs?.length, enabledExchanges?.length, mlModels?.length, confidenceThreshold]);
 
   const startScanning = () => {
     if (scanIntervalRef.current) {
