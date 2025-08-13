@@ -40,8 +40,8 @@ export const useWebSocketStats = () => {
     
     // Socket.IO connection URL
     const serverUrl = process.env.NODE_ENV === 'production' 
-      ? `https://${window.location.hostname}`
-      : `http://${window.location.hostname}:3001`;
+      ? `${window.location.protocol}//${window.location.hostname}`
+      : `${window.location.protocol}//${window.location.hostname}:3001`;
     
     console.log('🔌 Connecting to Socket.IO server:', serverUrl);
     
