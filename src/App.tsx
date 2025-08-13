@@ -183,6 +183,18 @@ const TradingCenter = ({ balance, isPaperTrading, isTrading, onStartTrading, onS
   const safeMLModels = Array.isArray(mlModels) ? mlModels : [];
   const safeExchanges = Array.isArray(exchanges) ? exchanges : [];
   
+  // Derive enabled pairs and exchanges for MLTradingAgent
+  const enabledPairs = Object.values(safeTradingPairs.exchanges || {})
+    .flat()
+    .filter((pair: any) => pair?.enabled)
+    .map((pair: any) => pair?.symbol || pair)
+    .filter(Boolean);
+  
+  const enabledExchanges = safeExchanges
+    .filter(exchange => exchange?.enabled && exchange?.connected)
+    .map(exchange => exchange?.id)
+    .filter(Boolean);
+  
   return (
     <div className="space-y-6">
       <TradingTab 
@@ -204,8 +216,13 @@ const TradingCenter = ({ balance, isPaperTrading, isTrading, onStartTrading, onS
         exchanges={safeExchanges}
       />
       <MLTradingAgent 
-        models={safeMLModels}
-        isTraining={false}
+        isActive={isTrading}
+        isPaperTrading={isPaperTrading}
+        balance={balance}
+        enabledPairs={enabledPairs}
+        enabledExchanges={enabledExchanges}
+        mlModels={safeMLModels}
+        onTradeExecuted={onExecuteTrade}
       />
     </div>
   );

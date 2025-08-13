@@ -588,7 +588,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Start server
-async function startServer() {
+const startServer = async () => {
     try {
         // Initialize all services BEFORE starting the server
         console.log('🚀 Initializing services...');
@@ -617,7 +617,7 @@ async function startServer() {
             console.log(`🚀 Server running on port ${PORT} (limited mode)`);
         });
     }
-}
+};
 
 // Start the server
 startServer();
