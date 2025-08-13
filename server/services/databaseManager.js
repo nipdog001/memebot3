@@ -23,27 +23,27 @@ class DatabaseManager {
         try {
             console.log('🗄️ Initializing database...');
             
-            // Check if we're on Railway (PostgreSQL) or local (SQLite)
-            if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgresql://')) {
+            // Always try PostgreSQL first if DATABASE_URL exists
+            if (process.env.DATABASE_URL) {
+                console.log('🔍 Found DATABASE_URL, attempting PostgreSQL connection...');
                 try {
                     await this.initializePostgreSQL();
                     this.isInitialized = true;
-                    console.log('✅ PostgreSQL database initialized successfully');
+                    console.log('✅ PostgreSQL database initialized successfully on Railway');
                 } catch (error) {
-                    console.error('PostgreSQL initialization failed:', error);
+                    console.error('❌ PostgreSQL initialization failed:', error.message);
                     this.pgClient = null;
                     this.isPostgres = false;
-                    // Try SQLite as fallback
-                    console.log('⚠️ Falling back to SQLite...');
-                    await this.initializeSQLite();
-                    this.isInitialized = true;
-                    console.log('✅ SQLite database initialized as fallback');
+                    throw error; // Don't fall back to SQLite if PostgreSQL is configured
                 }
             } else {
+                console.log('🔍 No DATABASE_URL found, using local SQLite...');
                 try {
                     await this.initializeSQLite();
+                    this.isInitialized = true;
+                    console.log('✅ SQLite database initialized successfully');
                 } catch (error) {
-                    console.error('SQLite initialization failed:', error);
+                    console.error('❌ SQLite initialization failed:', error.message);
                     this.db = null;
                     this.isPostgres = false;
                     throw error;
@@ -68,16 +68,19 @@ class DatabaseManager {
     async initializePostgreSQL() {
         console.log('🐘 Connecting to PostgreSQL (Railway)...');
         
-        const { Pool } = pg;
-        this.pgClient = new Pool({
+        // Use Client instead of Pool for Railway
+        const { Client } = pg;
+        this.pgClient = new Client({
             connectionString: process.env.DATABASE_URL,
-            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+            ssl: { rejectUnauthorized: false } // Railway requires SSL
         });
         
-        // Test connection with a simple query
-        await this.pgClient.query('SELECT 1');
+        // Connect and test
+        await this.pgClient.connect();
+        const result = await this.pgClient.query('SELECT NOW() as current_time');
+        console.log('✅ PostgreSQL connected at:', result.rows[0].current_time);
+        
         this.isPostgres = true;
-        console.log('✅ Connected to PostgreSQL on Railway');
     }
 
     async initializeSQLite() {
