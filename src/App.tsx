@@ -411,7 +411,6 @@ const useWebSocketStats = () => {
       };
     } catch (error) {
       console.warn('WebSocket creation failed, will retry:', error.message);
-    } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
       setIsConnected(false);
     }
