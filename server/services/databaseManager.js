@@ -326,8 +326,9 @@ class DatabaseManager {
             const result = await this.pgClient.query(sql, params);
             return result.rows;
         } else {
-            if (!this.db) {
-                console.error('SQLite database instance is null, cannot execute query');
+            // Defensive check for SQLite database object and its methods
+            if (!this.db || typeof this.db.all !== 'function' || typeof this.db.run !== 'function') {
+                console.error('SQLite database instance is invalid or missing required methods, cannot execute query');
                 return [];
             }
             if (sql.toLowerCase().startsWith('select')) {
@@ -359,6 +360,11 @@ class DatabaseManager {
             const result = await this.pgClient.query(sql, params);
             return result.rows[0] || null;
         } else {
+            // Defensive check for SQLite database object and its methods
+            if (!this.db || typeof this.db.get !== 'function') {
+                console.error('SQLite database instance is invalid or missing get method, cannot execute get query');
+                return null;
+            }
             return await this.db.get(sql, params);
         }
     }
