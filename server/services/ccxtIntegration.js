@@ -71,13 +71,13 @@ class CCXTIntegration {
             // Check if we have the required credentials
             const hasRequiredCredentials = credentials.apiKey && credentials.secret;
             if (!hasRequiredCredentials) {
-                console.warn(`⚠️ ${exchangeName}: Missing API credentials, skipping`);
+                console.warn(`⚠️ ${exchangeName}: Missing API credentials, will skip real data`);
                 this.connectionStatus[exchangeId] = {
                     connected: false,
-                    error: 'Missing API credentials',
+                    error: 'Missing API credentials - add to .env file',
                     hasApiKeys: false
                 };
-                return null;
+                return null; // Skip this exchange
             }
 
             // Create exchange configuration
@@ -108,30 +108,58 @@ class CCXTIntegration {
 
             // Test connection by loading markets
             console.log(`🔄 Testing connection to ${exchangeName}...`);
-            const markets = await exchange.loadMarkets();
+            
+            try {
+                const markets = await exchange.loadMarkets();
+                
+                // Test with a real ticker fetch
+                const testTicker = await exchange.fetchTicker('BTC/USDT');
+                if (!testTicker || !testTicker.last) {
+                    throw new Error('Invalid ticker response');
+                }
+                
+                console.log(`✅ ${exchangeName}: Real data test successful (BTC = $${testTicker.last.toLocaleString()})`);
+            } catch (testError) {
+                console.error(`❌ ${exchangeName}: Real data test failed - ${testError.message}`);
+                
+                // Still try to load markets for basic functionality
+                const markets = await exchange.loadMarkets();
+                console.warn(`⚠️ ${exchangeName}: Connected but real data may be limited`);
+            }
             
             // Store exchange and market data
             this.exchanges[exchangeId] = exchange;
-            this.marketCache[exchangeId] = markets;
+            this.marketCache[exchangeId] = await exchange.loadMarkets();
             this.connectionStatus[exchangeId] = {
                 connected: true,
                 hasApiKeys: true,
-                marketCount: Object.keys(markets).length,
+                marketCount: Object.keys(this.marketCache[exchangeId]).length,
                 lastConnected: Date.now()
             };
             
-            console.log(`✅ ${exchangeName}: Connected successfully (${Object.keys(markets).length} markets)`);
+            console.log(`✅ ${exchangeName}: Connected successfully (${Object.keys(this.marketCache[exchangeId]).length} markets)`);
             return exchange;
             
         } catch (error) {
             console.error(`❌ ${exchangeName}: Connection failed -`, error.message);
             
-            // Skip exchanges with 403 errors (likely missing credentials or IP restrictions)
-            if (error.message.includes('403') || error.message.includes('Forbidden')) {
-                console.warn(`⚠️ ${exchangeName}: 403 Forbidden - likely missing API credentials or IP restrictions`);
+            // Handle specific error types
+            if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('Request blocked')) {
+                console.warn(`⚠️ ${exchangeName}: Access forbidden - check API credentials and IP whitelist`);
                 this.connectionStatus[exchangeId] = {
                     connected: false,
-                    error: 'API access forbidden - check credentials and IP whitelist',
+                    error: 'Access forbidden - check API credentials and IP restrictions',
+                    hasApiKeys: !!(credentials.apiKey && credentials.secret),
+                    lastAttempt: Date.now()
+                };
+                return null;
+            }
+            
+            if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+                console.warn(`⚠️ ${exchangeName}: Network connectivity issue`);
+                this.connectionStatus[exchangeId] = {
+                    connected: false,
+                    error: 'Network connectivity issue',
                     hasApiKeys: !!(credentials.apiKey && credentials.secret),
                     lastAttempt: Date.now()
                 };
@@ -152,7 +180,6 @@ class CCXTIntegration {
                 error: error.message,
                 hasApiKeys: !!(credentials.apiKey && credentials.secret),
                 lastAttempt: Date.now()
-            console.log(`⚠️ ${exchangeName}: Skipping due to missing credentials`);
             };
             return null;
         }

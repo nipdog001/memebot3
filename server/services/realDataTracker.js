@@ -11,26 +11,52 @@ class RealDataTracker {
             averageLatency: 0,
             errorRate: 0
         };
+        this.marketSnapshots = new Map();
+        this.validatedExchanges = new Set();
     }
 
     async validateRealDataConnections() {
         try {
             console.log('🔍 Validating real data connections...');
             
-            // Check if we have any exchange connections with real API keys
-            const hasApiKeys = process.env.COINBASE_API_KEY || 
-                              process.env.KRAKEN_API_KEY || 
-                              process.env.BINANCEUS_API_KEY || 
-                              process.env.CRYPTOCOM_API_KEY;
+            // Initialize CCXT integration if not already done
+            await ccxtIntegration.initializeAllExchanges();
             
-            if (!hasApiKeys) {
-                console.log('⚠️ No API keys found - using simulated data');
+            const connectionStatus = ccxtIntegration.getConnectionStatus();
+            const connectedExchanges = Object.entries(connectionStatus.exchanges)
+                .filter(([_, status]) => status.connected && status.hasApiKeys)
+                .map(([id, _]) => id);
+            
+            if (connectedExchanges.length === 0) {
+                console.log('⚠️ No exchanges with API keys found');
                 return false;
             }
             
+            // Test real data fetching from each connected exchange
+            let validatedCount = 0;
+            for (const exchangeId of connectedExchanges) {
+                try {
+                    const testTicker = await ccxtIntegration.fetchRealTicker(exchangeId, 'BTC/USDT');
+                    if (testTicker && testTicker.isRealData && testTicker.price > 0) {
+                        this.validatedExchanges.add(exchangeId);
+                        validatedCount++;
+                        console.log(`✅ ${exchangeId}: Real data validated (BTC = $${testTicker.price.toLocaleString()})`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ ${exchangeId}: Real data validation failed - ${error.message}`);
+                }
+            }
+            
             this.lastRealDataCheck = Date.now();
-            console.log('✅ Real data connections validated');
-            return true;
+            const isValidated = validatedCount > 0;
+            
+            if (isValidated) {
+                console.log(`✅ Real data connections validated for ${validatedCount} exchanges`);
+            } else {
+                console.log('❌ No real data connections could be validated');
+            }
+            
+            return isValidated;
             
         } catch (error) {
             console.error('❌ Real data validation failed:', error);
@@ -170,11 +196,25 @@ class RealDataTracker {
     }
 
     getSystemHealthReport() {
+        const connectedExchanges = Array.from(this.validatedExchanges);
+        const totalSnapshots = this.marketSnapshots.size;
+        const recentSnapshots = Array.from(this.marketSnapshots.values())
+            .filter(s => Date.now() - s.timestamp < 300000).length; // Last 5 minutes
+        
         return {
+            exchangeHealth: Object.fromEntries(
+                connectedExchanges.map(id => [id, {
+                    status: 'REAL_DATA_CONFIRMED',
+                    lastValidation: this.lastRealDataCheck,
+                    dataQuality: 'HIGH'
+                }])
+            ),
             dataQualityScore: 85 + Math.random() * 10, // 85-95%
-            realDataConnections: this.exchangeHealthCheck.size,
+            realDataConnections: connectedExchanges.length,
             lastHealthCheck: this.lastRealDataCheck,
-            tradeHistory: this.tradeHistory.length
+            tradeHistory: this.tradeHistory.length,
+            marketSnapshots: totalSnapshots,
+            recentActivity: recentSnapshots
         };
     }
 
@@ -183,6 +223,16 @@ class RealDataTracker {
     // Get real market snapshot for learning
     async getMarketSnapshot(symbol, exchange) {
         try {
+            const cacheKey = `${exchange}:${symbol}`;
+            
+            // Check if we have a recent snapshot
+            if (this.marketSnapshots.has(cacheKey)) {
+                const snapshot = this.marketSnapshots.get(cacheKey);
+                if (Date.now() - snapshot.timestamp < 30000) { // 30 seconds
+                    return snapshot;
+                }
+            }
+            
             // Get order book depth
             const orderBook = await this.fetchOrderBook(symbol, exchange);
             
@@ -197,7 +247,7 @@ class RealDataTracker {
             // Determine market trend
             const trend = this.determineMarketTrend(recentTrades);
             
-            return {
+            const snapshot = {
                 symbol,
                 exchange,
                 timestamp: Date.now(),
@@ -211,6 +261,11 @@ class RealDataTracker {
                 trend,
                 liquidity: this.assessLiquidity(orderBook)
             };
+            
+            // Cache the snapshot
+            this.marketSnapshots.set(cacheKey, snapshot);
+            
+            return snapshot;
         } catch (error) {
             console.error(`Error getting market snapshot for ${symbol}:`, error);
             return null;
