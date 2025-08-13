@@ -293,7 +293,6 @@ class DatabaseManager {
                 console.log('✅ Default trading stats initialized');
             } else {
                 console.log('✅ Existing trading stats found, sync complete');
-                }
             }
         } catch (error) {
             console.log('Sync failed, continuing without sync:', error.message);
