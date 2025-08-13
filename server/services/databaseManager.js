@@ -126,10 +126,16 @@ class DatabaseManager {
                     winning_trades INTEGER DEFAULT 0,
                     losing_trades INTEGER DEFAULT 0,
                     total_profit DECIMAL DEFAULT 0,
-                    total_loss DECIMAL DEFAULT 0,
+                    total_fees DECIMAL DEFAULT 0,
+                    daily_pl DECIMAL DEFAULT 0,
+                    weekly_pl DECIMAL DEFAULT 0,
+                    monthly_pl DECIMAL DEFAULT 0,
                     win_rate DECIMAL DEFAULT 0,
-                    paper_balance DECIMAL DEFAULT 10000,
-                    live_balance DECIMAL DEFAULT 5000,
+                    weekly_comparison DECIMAL DEFAULT 0,
+                    monthly_comparison DECIMAL DEFAULT 0,
+                    daily_fees DECIMAL DEFAULT 0,
+                    weekly_fees DECIMAL DEFAULT 0,
+                    monthly_fees DECIMAL DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -384,17 +390,25 @@ class DatabaseManager {
                 sql = `
                     INSERT INTO trading_stats (
                         user_id, total_trades, winning_trades, losing_trades,
-                        total_profit, total_loss, win_rate, paper_balance, live_balance
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        total_profit, total_fees, daily_pl, weekly_pl, monthly_pl,
+                        win_rate, weekly_comparison, monthly_comparison,
+                        daily_fees, weekly_fees, monthly_fees
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                     ON CONFLICT (user_id) DO UPDATE SET
                         total_trades = $2,
                         winning_trades = $3,
                         losing_trades = $4,
                         total_profit = $5,
-                        total_loss = $6,
-                        win_rate = $7,
-                        paper_balance = $8,
-                        live_balance = $9,
+                        total_fees = $6,
+                        daily_pl = $7,
+                        weekly_pl = $8,
+                        monthly_pl = $9,
+                        win_rate = $10,
+                        weekly_comparison = $11,
+                        monthly_comparison = $12,
+                        daily_fees = $13,
+                        weekly_fees = $14,
+                        monthly_fees = $15,
                         updated_at = CURRENT_TIMESTAMP
                 `;
             } else {
@@ -413,10 +427,16 @@ class DatabaseManager {
                 stats.winningTrades || 0,
                 stats.losingTrades || 0,
                 stats.totalProfit || 0,
-                stats.totalLoss || 0,
+                stats.totalFees || 0,
+                stats.dailyPL || 0,
+                stats.weeklyPL || 0,
+                stats.monthlyPL || 0,
                 stats.winRate || 0,
-                stats.paperBalance || 10000,
-                stats.liveBalance || 5000
+                stats.weeklyComparison || 0,
+                stats.monthlyComparison || 0,
+                stats.dailyFees || 0,
+                stats.weeklyFees || 0,
+                stats.monthlyFees || 0
             ];
             
             await this.query(sql, params);
@@ -441,10 +461,16 @@ class DatabaseManager {
                 winningTrades: 0,
                 losingTrades: 0,
                 totalProfit: 0,
-                totalLoss: 0,
+                totalFees: 0,
+                dailyPL: 0,
+                weeklyPL: 0,
+                monthlyPL: 0,
                 winRate: 0,
-                paperBalance: 10000,
-                liveBalance: 5000
+                weeklyComparison: 0,
+                monthlyComparison: 0,
+                dailyFees: 0,
+                weeklyFees: 0,
+                monthlyFees: 0
             };
         } catch (error) {
             console.error('Error getting trading stats:', error);
