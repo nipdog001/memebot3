@@ -14,7 +14,6 @@
     "postinstall": "npm run build"
   },
   "dependencies": {
-    "@tensorflow/tfjs-node": "^4.17.0",
     "axios": "^1.6.5",
     "better-sqlite3": "^9.2.2",
     "ccxt": "^4.4.93",
