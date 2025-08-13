@@ -27,6 +27,8 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sqlite3": "^5.1.7",
+    "axios": "^1.6.5",
+    "@tensorflow/tfjs-node": "^4.17.0",
     "ws": "^8.16.0"
   },
   "devDependencies": {
