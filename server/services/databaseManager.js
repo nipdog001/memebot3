@@ -24,9 +24,23 @@ class DatabaseManager {
             
             // Check if we're on Railway (PostgreSQL) or local (SQLite)
             if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgresql://')) {
-                await this.initializePostgreSQL();
+                try {
+                    await this.initializePostgreSQL();
+                } catch (error) {
+                    console.error('PostgreSQL initialization failed:', error);
+                    this.pgClient = null;
+                    this.isPostgres = false;
+                    throw error;
+                }
             } else {
-                await this.initializeSQLite();
+                try {
+                    await this.initializeSQLite();
+                } catch (error) {
+                    console.error('SQLite initialization failed:', error);
+                    this.db = null;
+                    this.isPostgres = false;
+                    throw error;
+                }
             }
             
             // Create tables

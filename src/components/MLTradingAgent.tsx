@@ -60,8 +60,8 @@ export default function MLTradingAgent({
   isActive, 
   isPaperTrading, 
   balance, 
-  enabledPairs, 
-  enabledExchanges, 
+  enabledPairs = [], 
+  enabledExchanges = [], 
   mlModels = [], 
   onTradeExecuted 
 }: MLTradingAgentProps) {
