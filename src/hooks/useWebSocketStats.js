@@ -1,43 +1,11 @@
-// src/hooks/useWebSocketStats.ts
-// NEW FILE - Add this to your hooks folder
+// src/hooks/useWebSocketStats.js
+// WebSocket hook for real-time stats synchronization with backend
+// JavaScript version - no TypeScript
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-interface MLModel {
-  type: string;
-  name: string;
-  accuracy: number;
-  predictions: number;
-  profitGenerated: number;
-  enabled: boolean;
-  lastPrediction?: any;
-  lastTraining?: string;
-}
-
-interface Stats {
-  totalTrades: number;
-  winningTrades: number;
-  losingTrades: number;
-  totalProfit: number;
-  totalLoss: number;
-  winRate: number;
-  currentBalance: number;
-  liveBalance: number;
-  paperBalance: number;
-  mlModelStats: MLModel[];
-  exchangeStatus: any;
-  activeModels: number;
-  predictions24h: number;
-  lastUpdate: number;
-}
-
-interface WebSocketMessage {
-  type: string;
-  data: any;
-}
-
 export const useWebSocketStats = () => {
-  const [stats, setStats] = useState<Stats>({
+  const [stats, setStats] = useState({
     totalTrades: 0,
     winningTrades: 0,
     losingTrades: 0,
@@ -55,10 +23,10 @@ export const useWebSocketStats = () => {
   });
   
   const [isConnected, setIsConnected] = useState(false);
-  const [lastPrediction, setLastPrediction] = useState<any>(null);
-  const [lastTrade, setLastTrade] = useState<any>(null);
-  const ws = useRef<WebSocket | null>(null);
-  const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [lastPrediction, setLastPrediction] = useState(null);
+  const [lastTrade, setLastTrade] = useState(null);
+  const ws = useRef(null);
+  const reconnectTimeout = useRef(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   
@@ -69,6 +37,7 @@ export const useWebSocketStats = () => {
       return;
     }
     
+    // Railway-ready WebSocket URL
     const wsUrl = process.env.NODE_ENV === 'production' 
       ? `wss://${window.location.host}/ws`
       : 'ws://localhost:3001/ws';
@@ -91,7 +60,7 @@ export const useWebSocketStats = () => {
       
       ws.current.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data);
+          const message = JSON.parse(event.data);
           handleMessage(message);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -125,7 +94,7 @@ export const useWebSocketStats = () => {
   }, []);
   
   // Handle incoming messages
-  const handleMessage = (message: WebSocketMessage) => {
+  const handleMessage = (message) => {
     switch (message.type) {
       case 'initial_stats':
       case 'stats_update':
@@ -190,28 +159,28 @@ export const useWebSocketStats = () => {
   };
   
   // Update localStorage for persistence
-  const updateLocalStorage = (stats: Stats) => {
+  const updateLocalStorage = (statsData) => {
     try {
       localStorage.setItem('memebot_ws_stats', JSON.stringify({
-        totalTrades: stats.totalTrades,
-        winningTrades: stats.winningTrades,
-        losingTrades: stats.losingTrades,
-        totalProfit: stats.totalProfit,
-        totalLoss: stats.totalLoss,
-        winRate: stats.winRate,
-        currentBalance: stats.currentBalance,
-        liveBalance: stats.liveBalance,
-        paperBalance: stats.paperBalance,
-        lastUpdate: stats.lastUpdate
+        totalTrades: statsData.totalTrades,
+        winningTrades: statsData.winningTrades,
+        losingTrades: statsData.losingTrades,
+        totalProfit: statsData.totalProfit,
+        totalLoss: statsData.totalLoss,
+        winRate: statsData.winRate,
+        currentBalance: statsData.currentBalance,
+        liveBalance: statsData.liveBalance,
+        paperBalance: statsData.paperBalance,
+        lastUpdate: statsData.lastUpdate
       }));
       
       // Update balance in localStorage for compatibility with existing code
-      localStorage.setItem('memebot_balance', stats.paperBalance.toString());
-      localStorage.setItem('memebot_live_balance', stats.liveBalance.toString());
+      localStorage.setItem('memebot_balance', statsData.paperBalance.toString());
+      localStorage.setItem('memebot_live_balance', statsData.liveBalance.toString());
       
       // Save ML model stats
-      if (stats.mlModelStats && stats.mlModelStats.length > 0) {
-        localStorage.setItem('memebot_ml_models_ws', JSON.stringify(stats.mlModelStats));
+      if (statsData.mlModelStats && statsData.mlModelStats.length > 0) {
+        localStorage.setItem('memebot_ml_models_ws', JSON.stringify(statsData.mlModelStats));
       }
     } catch (error) {
       console.error('Error updating localStorage:', error);
@@ -219,7 +188,7 @@ export const useWebSocketStats = () => {
   };
   
   // Send message to server
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(message));
       console.log('📤 Sent to server:', message.type);
@@ -231,12 +200,7 @@ export const useWebSocketStats = () => {
   }, [connect]);
   
   // Start trading
-  const startTrading = useCallback((params: {
-    isPaper: boolean;
-    pairs: string[];
-    riskLevel: string;
-    tradeSize: number;
-  }) => {
+  const startTrading = useCallback((params) => {
     sendMessage({
       type: 'start_trading',
       params: params
@@ -251,7 +215,7 @@ export const useWebSocketStats = () => {
   }, [sendMessage]);
   
   // Toggle ML model
-  const toggleModel = useCallback((modelType: string, enabled: boolean) => {
+  const toggleModel = useCallback((modelType, enabled) => {
     sendMessage({
       type: 'toggle_model',
       modelType: modelType,
@@ -267,12 +231,7 @@ export const useWebSocketStats = () => {
   }, [sendMessage]);
   
   // Execute manual trade (optional feature)
-  const executeTrade = useCallback((trade: {
-    symbol: string;
-    action: 'BUY' | 'SELL';
-    amount: number;
-    exchange?: string;
-  }) => {
+  const executeTrade = useCallback((trade) => {
     sendMessage({
       type: 'execute_trade',
       trade: trade
@@ -280,7 +239,7 @@ export const useWebSocketStats = () => {
   }, [sendMessage]);
   
   // Update settings
-  const updateSettings = useCallback((settings: any) => {
+  const updateSettings = useCallback((settings) => {
     sendMessage({
       type: 'update_settings',
       settings: settings
