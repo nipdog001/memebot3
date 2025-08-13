@@ -53,7 +53,7 @@ export default function PLCards({
   };
 
   const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+    return `${(value || 0).toFixed(1)}%`;
   };
 
   return (
@@ -77,9 +77,9 @@ export default function PLCards({
         </div>
         
         <div className={`text-3xl font-bold mb-2 ${
-          dailyPL >= 0 ? 'text-green-400' : 'text-red-400'
+          (dailyPL || 0) >= 0 ? 'text-green-400' : 'text-red-400'
         }`}>
-          {dailyPL >= 0 ? '+' : ''}{formatCurrency(dailyPL)}
+          {(dailyPL || 0) >= 0 ? '+' : ''}{formatCurrency(dailyPL || 0)}
         </div>
         
         <div className="text-sm text-gray-400">
@@ -87,7 +87,7 @@ export default function PLCards({
         </div>
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
           <span>Win/Loss: <span className="text-green-400">{winningTrades}</span>/<span className="text-red-400">{losingTrades}</span></span>
-          <span>Fees: <span className="text-red-400">{formatCurrency(dailyFees)}</span></span>
+          <span>Fees: <span className="text-red-400">{formatCurrency(dailyFees || 0)}</span></span>
         </div>
       </div>
 
@@ -110,20 +110,20 @@ export default function PLCards({
         </div>
         
         <div className={`text-3xl font-bold mb-2 ${
-          weeklyPL >= 0 ? 'text-green-400' : 'text-red-400'
+          (weeklyPL || 0) >= 0 ? 'text-green-400' : 'text-red-400'
         }`}>
-          {weeklyPL >= 0 ? '+' : ''}{formatCurrency(weeklyPL)}
+          {(weeklyPL || 0) >= 0 ? '+' : ''}{formatCurrency(weeklyPL || 0)}
         </div>
         
         <div className="flex items-center space-x-1 text-sm">
           <span className="text-gray-400">vs previous:</span>
-          <span className={weeklyComparison >= 0 ? 'text-green-400' : 'text-red-400'}>
-            {weeklyComparison >= 0 ? '+' : ''}{formatPercentage(weeklyComparison)}
+          <span className={(weeklyComparison || 0) >= 0 ? 'text-green-400' : 'text-red-400'}>
+            {(weeklyComparison || 0) >= 0 ? '+' : ''}{formatPercentage(weeklyComparison || 0)}
           </span>
         </div>
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
           <span>Win/Loss: <span className="text-green-400">{winningTrades}</span>/<span className="text-red-400">{losingTrades}</span></span>
-          <span>Fees: <span className="text-red-400">{formatCurrency(weeklyFees)}</span></span>
+          <span>Fees: <span className="text-red-400">{formatCurrency(weeklyFees || 0)}</span></span>
         </div>
       </div>
 
@@ -146,20 +146,20 @@ export default function PLCards({
         </div>
         
         <div className={`text-3xl font-bold mb-2 ${
-          monthlyPL >= 0 ? 'text-green-400' : 'text-red-400'
+          (monthlyPL || 0) >= 0 ? 'text-green-400' : 'text-red-400'
         }`}>
-          {monthlyPL >= 0 ? '+' : ''}{formatCurrency(monthlyPL)}
+          {(monthlyPL || 0) >= 0 ? '+' : ''}{formatCurrency(monthlyPL || 0)}
         </div>
         
         <div className="flex items-center space-x-1 text-sm">
           <span className="text-gray-400">vs previous:</span>
-          <span className={monthlyComparison >= 0 ? 'text-green-400' : 'text-red-400'}>
-            {monthlyComparison >= 0 ? '+' : ''}{formatPercentage(monthlyComparison)}
+          <span className={(monthlyComparison || 0) >= 0 ? 'text-green-400' : 'text-red-400'}>
+            {(monthlyComparison || 0) >= 0 ? '+' : ''}{formatPercentage(monthlyComparison || 0)}
           </span>
         </div>
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
           <span>Win/Loss: <span className="text-green-400">{winningTrades}</span>/<span className="text-red-400">{losingTrades}</span></span>
-          <span>Fees: <span className="text-red-400">{formatCurrency(monthlyFees)}</span></span>
+          <span>Fees: <span className="text-red-400">{formatCurrency(monthlyFees || 0)}</span></span>
         </div>
       </div>
 
@@ -175,22 +175,22 @@ export default function PLCards({
         <div className="space-y-2">
           <div className="flex justify-between">
             <span className="text-gray-400">Total Trades:</span>
-            <span className="text-white font-medium">{totalTrades.toLocaleString()}</span>
+            <span className="text-white font-medium">{(totalTrades || 0).toLocaleString()}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Win Rate:</span>
-            <span className="text-green-400 font-medium">{winningTrades}/{totalTrades} ({formatPercentage(winRate)})</span>
+            <span className="text-green-400 font-medium">{winningTrades || 0}/{totalTrades || 0} ({formatPercentage(winRate || 0)})</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Total Fees:</span>
-            <span className="text-red-400 font-medium">{formatCurrency(totalFees)}</span>
+            <span className="text-red-400 font-medium">{formatCurrency(totalFees || 0)}</span>
           </div>
           <div className="flex justify-between">
             {databaseType && (
               <div className="flex justify-between">
                 <span className="text-gray-400">Database:</span>
                 <span className="text-blue-400 font-medium">
-                  {databaseType}
+                  {databaseType || "Unknown"}
                 </span>
               </div>
             )}

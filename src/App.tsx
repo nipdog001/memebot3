@@ -52,6 +52,58 @@ import TierEnforcement from './components/TierEnforcement';
 import TierManagement from './components/TierManagement';
 import ExchangeDataTester from './components/ExchangeDataTester';
 
+// Import default tiers for TierEnforcement
+const DEFAULT_TIERS = {
+  basic: {
+    maxTrades: 10,
+    maxCapital: 1000,
+    positionSizeMax: 100,
+    mlModels: 2,
+    exchanges: 1,
+    tradingPairs: 5,
+    socialPlatforms: 1,
+    apiCalls: 1000,
+    supportLevel: 'Community',
+    riskManagement: 'Basic'
+  },
+  pro: {
+    maxTrades: 100,
+    maxCapital: 10000,
+    positionSizeMax: 1000,
+    mlModels: 5,
+    exchanges: 3,
+    tradingPairs: 20,
+    socialPlatforms: 3,
+    apiCalls: 10000,
+    supportLevel: 'Email',
+    riskManagement: 'Advanced'
+  },
+  expert: {
+    maxTrades: 500,
+    maxCapital: 50000,
+    positionSizeMax: 5000,
+    mlModels: 10,
+    exchanges: 5,
+    tradingPairs: 50,
+    socialPlatforms: 5,
+    apiCalls: 50000,
+    supportLevel: 'Priority',
+    riskManagement: 'Expert'
+  },
+  enterprise: {
+    maxTrades: -1,
+    maxCapital: -1,
+    positionSizeMax: -1,
+    mlModels: -1,
+    exchanges: -1,
+    tradingPairs: -1,
+    socialPlatforms: -1,
+    apiCalls: -1,
+    supportLevel: '24/7 Phone',
+    riskManagement: 'Custom'
+  }
+};
+
 // Complete Dashboard wrapper with all required props
 const Dashboard = ({ stats, trades, balance, mlModels, exchanges, isPaperTrading, isTrading, ...props }: any) => {
   // Ensure stats has ALL required properties
@@ -76,6 +128,14 @@ const Dashboard = ({ stats, trades, balance, mlModels, exchanges, isPaperTrading
     winStreak: 0,
     lossStreak: 0,
     totalFees: 0,
+    dailyPL: 0,
+    weeklyPL: 0,
+    monthlyPL: 0,
+    weeklyComparison: 0,
+    monthlyComparison: 0,
+    dailyFees: 0,
+    weeklyFees: 0,
+    monthlyFees: 0,
     ...stats
   };
 
@@ -92,9 +152,11 @@ const Dashboard = ({ stats, trades, balance, mlModels, exchanges, isPaperTrading
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <PLCards 
-          stats={safeStats}
-          balance={balance || 10000}
-          isPaperTrading={isPaperTrading}
+          {...safeStats}
+          totalTrades={safeStats.totalTrades}
+          winningTrades={Math.floor(safeStats.totalTrades * (safeStats.winRate / 100))}
+          losingTrades={safeStats.totalTrades - Math.floor(safeStats.totalTrades * (safeStats.winRate / 100))}
+          databaseType="Connected"
         />
         <DashboardCard 
           stats={safeStats}
@@ -857,10 +919,17 @@ export default function App() {
   
   // Tier usage data for TierEnforcement
   const tierUsage = {
-    tradesUsed: persistentStats.totalTrades || 0,
-    modelsActive: mlModels.filter(m => m.enabled).length || 0,
-    exchangesConnected: exchanges.filter(e => e.connected).length || 0
+    tradesUsed: persistentStats?.totalTrades || 0,
+    mlModelsUsed: mlModels?.filter(m => m?.enabled)?.length || 0,
+    exchangesConnected: exchanges?.filter(e => e?.connected)?.length || 0,
+    tradingPairsEnabled: 8,
+    socialPlatformsEnabled: 3,
+    apiCallsUsed: 1500,
+    currentCapital: isPaperTrading ? balance : liveBalance
   };
+  
+  // Get tier limits
+  const tierLimits = DEFAULT_TIERS[userTier as keyof typeof DEFAULT_TIERS] || DEFAULT_TIERS.basic;
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -1103,7 +1172,9 @@ export default function App() {
         {/* Tier enforcement overlay - with proper usage data */}
         <TierEnforcement 
           userTier={userTier}
-          usage={tierUsage}
+          tierLimits={tierLimits}
+          currentUsage={tierUsage}
+          onUpgradeRequest={() => setShowUpgradeModal(true)}
         />
       </div>
     </div>
