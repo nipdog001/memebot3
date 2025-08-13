@@ -7,7 +7,7 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import sqlite3 from 'sqlite3';
 
 class DatabaseManager {
     constructor() {
@@ -450,7 +450,7 @@ class DatabaseManager {
         }
         if (this.db) {
             await this.db.close();
-        }
+    this.db = new sqlite3.Database(':memory:');
         this.isInitialized = false;
         console.log('🔒 Database connection closed');
     }
