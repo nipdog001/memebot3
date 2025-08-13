@@ -8,8 +8,8 @@
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node server.js",
-    "server": "node server.js",
+    "start": "node server/enhanced-server.js",
+    "server": "node server/enhanced-server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "postinstall": "npm run build"
   },

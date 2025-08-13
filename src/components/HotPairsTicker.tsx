@@ -47,15 +47,38 @@ export default function HotPairsTicker({ trades, enabledPairs }: HotPairsTickerP
   }, [topPairs]);
 
   const calculatePairPerformance = () => {
+    // Ensure trades is a valid array before processing
+    if (!trades || !Array.isArray(trades) || trades.length === 0) {
+      console.log('📊 Hot pairs ticker: No valid trades data available');
+      setTopPairs([]);
+      return;
+    }
+
     // Group trades by symbol
     const pairStats: Record<string, PairPerformance> = {};
     const processedTradeIds = new Set<string>();
     
     trades.forEach(trade => {
+      // Validate trade object and required properties
+      if (!trade || typeof trade !== 'object') {
+        console.warn('Invalid trade object:', trade);
+        return;
+      }
+      
+      if (!trade.symbol || typeof trade.symbol !== 'string') {
+        console.warn('Trade missing valid symbol:', trade);
+        return;
+      }
+      
+      if (typeof trade.netProfit !== 'number') {
+        console.warn('Trade missing valid netProfit:', trade);
+        return;
+      }
+      
       const symbol = trade.symbol;
       // Skip if we've already processed this trade
-      if (processedTradeIds.has(trade.id)) return;
-      processedTradeIds.add(trade.id);
+      if (trade.id && processedTradeIds.has(trade.id)) return;
+      if (trade.id) processedTradeIds.add(trade.id);
       
       if (!pairStats[symbol]) {
         pairStats[symbol] = {
