@@ -277,6 +277,9 @@ class DatabaseManager {
             const result = await this.pgClient.query(sql, params);
             return result.rows;
         } else {
+            if (!this.db) {
+                throw new Error('SQLite database instance is null');
+            }
             if (sql.toLowerCase().startsWith('select')) {
                 return await this.db.all(sql, params);
             } else {
