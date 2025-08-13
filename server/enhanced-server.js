@@ -205,6 +205,13 @@ function setupMLEventListeners() {
 function startStatsUpdateLoop() {
     setInterval(async () => {
         try {
+            // Only save stats if database is properly connected
+            const dbStatus = databaseManager.getStatus();
+            if (!dbStatus.connected) {
+                console.warn('Database not connected, skipping stats save');
+                return;
+            }
+            
             // Get exchange status
             const exchangeStatus = ccxtIntegration.getConnectionStatus();
             globalStats.exchangeStatus = exchangeStatus;

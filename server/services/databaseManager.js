@@ -41,6 +41,10 @@ class DatabaseManager {
             return true;
         } catch (error) {
             console.error('❌ Database initialization failed:', error);
+            // Explicitly set connections to null on failure
+            this.db = null;
+            this.pgClient = null;
+            this.isInitialized = false;
             return false;
         }
     }
@@ -319,12 +323,12 @@ class DatabaseManager {
     // Save trading statistics
     async saveTradingStats(userId = 'default', stats) {
         try {
+            // Check if database is properly initialized and connected
             if (!this.isInitialized) {
                 console.warn('Database not initialized, cannot save trading stats');
                 return false;
             }
             
-            // Additional check for actual database connections
             if (this.isPostgres && !this.pgClient) {
                 console.error('PostgreSQL client is null, cannot save trading stats');
                 return false;
