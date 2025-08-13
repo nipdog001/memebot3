@@ -555,7 +555,7 @@ process.on('SIGINT', async () => {
     await databaseManager.close();
     
     // Close WebSocket server
-    wss.close();
+    io.close();
     
     // Close HTTP server
     server.close();
