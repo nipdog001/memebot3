@@ -109,10 +109,24 @@ class DatabaseManager {
             const dbPath = path.join(__dirname, '..', 'data', 'trading.db');
             const dataDir = path.dirname(dbPath);
             
+            console.log(`📁 Ensuring database directory exists: ${dataDir}`);
             if (!fs.existsSync(dataDir)) {
                 fs.mkdirSync(dataDir, { recursive: true });
+                console.log(`✅ Created database directory: ${dataDir}`);
             }
             
+            // Check if we can write to the directory
+            try {
+                const testFile = path.join(dataDir, 'test-write.tmp');
+                fs.writeFileSync(testFile, 'test');
+                fs.unlinkSync(testFile);
+                console.log(`✅ Directory write permissions verified: ${dataDir}`);
+            } catch (permError) {
+                console.error(`❌ Cannot write to directory ${dataDir}:`, permError.message);
+                throw new Error(`Database directory not writable: ${dataDir}`);
+            }
+            
+            console.log(`📊 Initializing SQLite database: ${dbPath}`);
             this.db = new Database(dbPath);
             this.connectionType = 'sqlite';
             this.isConnected = true;

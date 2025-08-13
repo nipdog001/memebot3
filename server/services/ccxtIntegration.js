@@ -126,6 +126,18 @@ class CCXTIntegration {
         } catch (error) {
             console.error(`❌ ${exchangeName}: Connection failed -`, error.message);
             
+            // Skip exchanges with 403 errors (likely missing credentials or IP restrictions)
+            if (error.message.includes('403') || error.message.includes('Forbidden')) {
+                console.warn(`⚠️ ${exchangeName}: 403 Forbidden - likely missing API credentials or IP restrictions`);
+                this.connectionStatus[exchangeId] = {
+                    connected: false,
+                    error: 'API access forbidden - check credentials and IP whitelist',
+                    hasApiKeys: !!(credentials.apiKey && credentials.secret),
+                    lastAttempt: Date.now()
+                };
+                return null;
+            }
+            
             // Special handling for common errors
             if (exchangeId === 'coinbase' && error.message.includes('401')) {
                 console.error('🔑 Coinbase authentication failed. Check:');
@@ -140,6 +152,7 @@ class CCXTIntegration {
                 error: error.message,
                 hasApiKeys: !!(credentials.apiKey && credentials.secret),
                 lastAttempt: Date.now()
+            console.log(`⚠️ ${exchangeName}: Skipping due to missing credentials`);
             };
             return null;
         }
