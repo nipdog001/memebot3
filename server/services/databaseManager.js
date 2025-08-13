@@ -81,7 +81,7 @@ class DatabaseManager {
         } catch (error) {
             console.error('❌ Failed to initialize SQLite:', error);
             this.db = null;
-            throw error;
+            throw new Error(`SQLite initialization failed: ${error.message}`);
         }
     }
 
@@ -272,8 +272,7 @@ class DatabaseManager {
             return result.rows;
         } else {
             if (!this.db) {
-                console.error('SQLite database connection is null, cannot execute query');
-                return [];
+                throw new Error('SQLite database connection is null - database initialization may have failed');
             }
             if (!this.db) {
                 console.error('SQLite database is null, cannot execute query');
@@ -307,8 +306,7 @@ class DatabaseManager {
             return result.rows[0] || null;
         } else {
             if (!this.db) {
-                console.error('SQLite database connection is null, cannot execute get query');
-                return null;
+                throw new Error('SQLite database connection is null - database initialization may have failed');
             }
             if (!this.db) {
                 console.error('SQLite database is null, cannot execute get query');
