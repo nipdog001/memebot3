@@ -43,13 +43,14 @@ export const useWebSocketStats = () => {
     if (process.env.NODE_ENV === 'production') {
       serverUrl = window.location.origin;
     } else {
-      // In development/WebContainer, replace the frontend port with backend port
       const hostname = window.location.hostname;
       const protocol = window.location.protocol;
       
-      // Handle WebContainer hostnames that include port info
-      if (hostname.includes('--3000--')) {
-        serverUrl = `${protocol}//${hostname.replace('--3000--', '--3001--')}`;
+      // Handle WebContainer hostnames with embedded port info
+      if (hostname.includes('--') && hostname.includes('webcontainer')) {
+        // Use regex to replace any embedded port with 3001
+        const backendHostname = hostname.replace(/--\d+--/, '--3001--');
+        serverUrl = `${protocol}//${backendHostname}`;
       } else {
         serverUrl = `${protocol}//${hostname}:3001`;
       }

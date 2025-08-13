@@ -362,9 +362,20 @@ const useWebSocketStats = () => {
     }
     
     // Use the same host as the frontend but on port 3001 for development
-    const wsUrl = process.env.NODE_ENV === 'production' 
-      ? `wss://${window.location.host}/ws`
-      : `ws://${window.location.hostname}:3001/ws`;
+    let wsUrl;
+    if (process.env.NODE_ENV === 'production') {
+      wsUrl = `wss://${window.location.host}/ws`;
+    } else {
+      const hostname = window.location.hostname;
+      // Handle WebContainer hostnames with embedded port numbers
+      if (hostname.includes('--') && hostname.includes('webcontainer')) {
+        // Replace the embedded port number with 3001
+        const backendHostname = hostname.replace(/--3000--/, '--3001--');
+        wsUrl = `ws://${backendHostname}/ws`;
+      } else {
+        wsUrl = `ws://${hostname}:3001/ws`;
+      }
+    }
     
     console.log('🔌 Connecting to WebSocket:', wsUrl);
     

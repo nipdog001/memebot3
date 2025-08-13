@@ -49,12 +49,14 @@ class ExchangeDataService {
         if (process.env.NODE_ENV === 'production') {
             this.baseURL = window.location.origin;
         } else {
-            // In development/WebContainer, replace frontend port with backend port
+            // In development/WebContainer, handle embedded port numbers properly
             const hostname = window.location.hostname;
             const protocol = window.location.protocol;
             
-            if (hostname.includes('--3000--')) {
-                this.baseURL = `${protocol}//${hostname.replace('--3000--', '--3001--')}`;
+            if (hostname.includes('--') && hostname.includes('webcontainer')) {
+                // Use regex to replace any embedded port with 3001
+                const backendHostname = hostname.replace(/--\d+--/, '--3001--');
+                this.baseURL = `${protocol}//${backendHostname}`;
             } else {
                 this.baseURL = `${protocol}//${hostname}:3001`;
             }
