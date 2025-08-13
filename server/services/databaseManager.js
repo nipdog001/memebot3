@@ -28,7 +28,6 @@ class DatabaseManager {
                 console.log('🔍 Found DATABASE_URL, attempting PostgreSQL connection...');
                 try {
                     await this.initializePostgreSQL();
-                    this.isInitialized = true;
                     console.log('✅ PostgreSQL database initialized successfully on Railway');
                 } catch (error) {
                     console.error('❌ PostgreSQL initialization failed:', error.message);
@@ -40,7 +39,6 @@ class DatabaseManager {
                 console.log('🔍 No DATABASE_URL found, using local SQLite...');
                 try {
                     await this.initializeSQLite();
-                    this.isInitialized = true;
                     console.log('✅ SQLite database initialized successfully');
                 } catch (error) {
                     console.error('❌ SQLite initialization failed:', error.message);
@@ -56,11 +54,15 @@ class DatabaseManager {
             // Sync with existing data if available
             await this.syncExistingData();
             
+            // Only set initialized flag after everything succeeds
+            this.isInitialized = true;
             
             return true;
         } catch (error) {
             console.error('❌ Database initialization failed:', error);
             this.isInitialized = false;
+            this.db = null;
+            this.pgClient = null;
             return false;
         }
     }
@@ -264,23 +266,37 @@ class DatabaseManager {
     // Sync with existing Railway data
     async syncExistingData() {
         try {
+            // Only sync if database is properly initialized
+            if (!this.isInitialized && !this.db && !this.pgClient) {
+                console.log('Database not initialized, skipping sync');
+                return;
+            }
+            
             // Check if we have existing data in the database
             const existingStats = await this.getTradingStats('default');
             
-            if (!existingStats) {
-                try {
-                    await this.initializeSQLite();
-                    this.isInitialized = true;
-                    console.log('✅ SQLite database initialized successfully');
-                } catch (error) {
-                    console.error('SQLite initialization failed:', error);
-                    this.db = null;
-                    this.isInitialized = false;
-                    throw error;
+            // If no existing stats, insert default values
+            if (!existingStats || existingStats.totalTrades === 0) {
+                console.log('No existing stats found, inserting default values');
+                const defaultStats = {
+                    totalTrades: 0,
+                    winningTrades: 0,
+                    losingTrades: 0,
+                    totalProfit: 0,
+                    totalLoss: 0,
+                    winRate: 0,
+                    paperBalance: 10000,
+                    liveBalance: 5000
+                };
+                
+                await this.saveTradingStats('default', defaultStats);
+                console.log('✅ Default trading stats initialized');
+            } else {
+                console.log('✅ Existing trading stats found, sync complete');
                 }
             }
         } catch (error) {
-            console.log('No existing data to sync');
+            console.log('Sync failed, continuing without sync:', error.message);
         }
     }
 
