@@ -1130,9 +1130,9 @@ export default function App() {
               onStartTrading={handleStartTrading}
               onStopTrading={handleStopTrading}
               onExecuteTrade={executeTrade}
-              exchanges={exchanges}
-              mlModels={mlModels}
-              tradingPairs={tradingPairs}
+              exchanges={exchanges || []}
+              mlModels={mlModels || []}
+              tradingPairs={tradingPairs || { exchanges: {} }}
               userTier={userTier}
               isAdmin={isAdmin}
             />

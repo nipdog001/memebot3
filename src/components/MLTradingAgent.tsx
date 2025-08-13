@@ -210,7 +210,7 @@ export default function MLTradingAgent({
         clearInterval(scanIntervalRef.current);
       }
     };
-  }, [isActive, enabledPairs?.length, enabledExchanges?.length, mlModels?.length, confidenceThreshold]);
+  }, [isActive, (enabledPairs || []).length, (enabledExchanges || []).length, (mlModels || []).length, confidenceThreshold]);
 
   const startScanning = () => {
     if (scanIntervalRef.current) {
@@ -239,7 +239,7 @@ export default function MLTradingAgent({
   };
 
   const scanMarket = async () => {
-    if (!isActive || (enabledPairs || []).length === 0 || (enabledExchanges || []).length === 0) return;
+    if (!isActive || !Array.isArray(enabledPairs) || enabledPairs.length === 0 || !Array.isArray(enabledExchanges) || enabledExchanges.length === 0) return;
     
     // Reload learned model data before each scan for latest improvements
     loadLearnedModelData();
@@ -250,8 +250,8 @@ export default function MLTradingAgent({
       // Get real market data from exchange data service
       const newMarketData: MarketData[] = [];
       
-      for (const exchange of (enabledExchanges || [])) {
-        for (const symbol of (enabledPairs || [])) {
+      for (const exchange of (Array.isArray(enabledExchanges) ? enabledExchanges : [])) {
+        for (const symbol of (Array.isArray(enabledPairs) ? enabledPairs : [])) {
           // Get real market data from exchange data service
           const realData = exchangeDataService.getMarketData(exchange, symbol);
           
@@ -780,7 +780,7 @@ export default function MLTradingAgent({
       {/* Agent Status Footer */}
       <div className="mt-4 pt-4 border-t border-slate-600 flex justify-between items-center text-xs text-gray-400">
         <div>
-          Monitoring {enabledPairs.length} pairs across {enabledExchanges.length} exchanges with {realDataStatus.isUsingRealData ? 'REAL' : 'simulated'} data
+          Monitoring {(enabledPairs || []).length} pairs across {(enabledExchanges || []).length} exchanges with {realDataStatus.isUsingRealData ? 'REAL' : 'simulated'} data
         </div>
         <div>
           Last scan: {formatTime(lastScan)} • Confidence threshold: {confidenceThreshold}%
