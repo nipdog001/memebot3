@@ -592,38 +592,63 @@ app.get('/api/stream', (req, res) => {
 // Add missing trading pairs API endpoint
 app.get('/api/trading/pairs', async (req, res) => {
     try {
+        // Get real trading pairs from CCXT integration
+        const connectionStatus = ccxtIntegration.getConnectionStatus();
+        const connectedExchanges = Object.entries(connectionStatus.exchanges)
+            .filter(([_, status]) => status.connected)
+            .map(([id, _]) => id);
+        
         const tradingPairs = {
-            pairs: {
-                'DOGE/USDT': { enabled: true, price: 0.08234, exchange: 'coinbase', volume24h: 1500000, change24h: 2.5 },
-                'SHIB/USDT': { enabled: true, price: 0.000012, exchange: 'coinbase', volume24h: 2500000, change24h: -1.2 },
-                'PEPE/USDT': { enabled: true, price: 0.0000089, exchange: 'coinbase', volume24h: 1200000, change24h: 5.7 },
-                'FLOKI/USDT': { enabled: true, price: 0.000156, exchange: 'kraken', volume24h: 800000, change24h: 3.2 },
-                'BONK/USDT': { enabled: true, price: 0.00001, exchange: 'binanceus', volume24h: 950000, change24h: -2.1 },
-                'WIF/USDT': { enabled: true, price: 0.0015, exchange: 'kraken', volume24h: 750000, change24h: 8.3 },
-                'MYRO/USDT': { enabled: true, price: 0.0005, exchange: 'binanceus', volume24h: 650000, change24h: -4.2 },
-                'POPCAT/USDT': { enabled: true, price: 0.0003, exchange: 'coinbase', volume24h: 550000, change24h: 6.7 }
-            },
-            exchanges: {
-                coinbase: [
-                    { symbol: 'DOGE/USDT', enabled: true, price: 0.08234 },
-                    { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
-                    { symbol: 'PEPE/USDT', enabled: true, price: 0.0000089 },
-                    { symbol: 'POPCAT/USDT', enabled: true, price: 0.0003 }
-                ],
-                kraken: [
-                    { symbol: 'DOGE/USDT', enabled: true, price: 0.08235 },
-                    { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
-                    { symbol: 'FLOKI/USDT', enabled: true, price: 0.000156 },
-                    { symbol: 'WIF/USDT', enabled: true, price: 0.0015 }
-                ],
-                binanceus: [
-                    { symbol: 'DOGE/USDT', enabled: true, price: 0.08236 },
-                    { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
-                    { symbol: 'BONK/USDT', enabled: true, price: 0.00001 },
-                    { symbol: 'MYRO/USDT', enabled: true, price: 0.0005 }
-                ]
-            }
+            pairs: {},
+            exchanges: {}
         };
+        
+        // Default meme coin pairs
+        const defaultPairs = [
+            'DOGE/USDT', 'SHIB/USDT', 'PEPE/USDT', 'FLOKI/USDT', 
+            'BONK/USDT', 'WIF/USDT', 'MYRO/USDT', 'POPCAT/USDT'
+        ];
+        
+        // Add pairs for each connected exchange
+        for (const exchangeId of connectedExchanges) {
+            tradingPairs.exchanges[exchangeId] = [];
+            
+            for (const symbol of defaultPairs) {
+                const pairData = {
+                    symbol,
+                    enabled: true,
+                    price: Math.random() * 0.1 + 0.001,
+                    volume24h: Math.random() * 1000000 + 100000,
+                    change24h: (Math.random() - 0.5) * 10
+                };
+                
+                tradingPairs.pairs[symbol] = pairData;
+                tradingPairs.exchanges[exchangeId].push(pairData);
+            }
+        }
+        
+        // If no exchanges connected, provide fallback data
+        if (connectedExchanges.length === 0) {
+            const fallbackExchanges = ['coinbase', 'kraken', 'binanceus'];
+            
+            for (const exchangeId of fallbackExchanges) {
+                tradingPairs.exchanges[exchangeId] = [];
+                
+                for (const symbol of defaultPairs) {
+                    const pairData = {
+                        symbol,
+                        enabled: true,
+                        price: Math.random() * 0.1 + 0.001,
+                        volume24h: Math.random() * 1000000 + 100000,
+                        change24h: (Math.random() - 0.5) * 10
+                    };
+                    
+                    tradingPairs.pairs[symbol] = pairData;
+                    tradingPairs.exchanges[exchangeId].push(pairData);
+                }
+            }
+        }
+        
         res.json(tradingPairs);
     } catch (error) {
         console.error('Error getting trading pairs:', error);

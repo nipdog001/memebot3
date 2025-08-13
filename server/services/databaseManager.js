@@ -27,11 +27,17 @@ class DatabaseManager {
             if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgresql://')) {
                 try {
                     await this.initializePostgreSQL();
+                    this.isInitialized = true;
+                    console.log('✅ PostgreSQL database initialized successfully');
                 } catch (error) {
                     console.error('PostgreSQL initialization failed:', error);
                     this.pgClient = null;
                     this.isPostgres = false;
-                    throw error;
+                    // Try SQLite as fallback
+                    console.log('⚠️ Falling back to SQLite...');
+                    await this.initializeSQLite();
+                    this.isInitialized = true;
+                    console.log('✅ SQLite database initialized as fallback');
                 }
             } else {
                 try {
@@ -50,15 +56,10 @@ class DatabaseManager {
             // Sync with existing data if available
             await this.syncExistingData();
             
-            this.isInitialized = true;
-            console.log('✅ Database initialized');
             
             return true;
         } catch (error) {
             console.error('❌ Database initialization failed:', error);
-            // Explicitly set connections to null on failure
-            this.db = null;
-            this.pgClient = null;
             this.isInitialized = false;
             return false;
         }
@@ -264,7 +265,16 @@ class DatabaseManager {
             const existingStats = await this.getTradingStats('default');
             
             if (!existingStats) {
-                await this.initializeSQLite();
+                try {
+                    await this.initializeSQLite();
+                    this.isInitialized = true;
+                    console.log('✅ SQLite database initialized successfully');
+                } catch (error) {
+                    console.error('SQLite initialization failed:', error);
+                    this.db = null;
+                    this.isInitialized = false;
+                    throw error;
+                }
             }
         } catch (error) {
             console.log('No existing data to sync');
