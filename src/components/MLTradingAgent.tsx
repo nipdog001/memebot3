@@ -375,8 +375,8 @@ export default function MLTradingAgent({
   };
 
   // Generate ML predictions based on market data
-  const generateMLPredictions = (data: MarketData[], models: any[]): MLPrediction[] => {
-    if (!data.length || !Array.isArray(models) || models.length === 0) return [];
+  const generateMLPredictions = (data: MarketData[] | undefined | null, models: any[]): MLPrediction[] => {
+    if (!data || !Array.isArray(data) || data.length === 0 || !Array.isArray(models) || models.length === 0) return [];
     
     const predictions: MLPrediction[] = [];
     

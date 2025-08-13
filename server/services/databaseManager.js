@@ -85,6 +85,7 @@ class DatabaseManager {
         } catch (error) {
             console.error('❌ Failed to initialize SQLite:', error);
             this.db = null;
+            this.db = null;
             throw new Error(`SQLite initialization failed: ${error.message}`);
         }
     }
@@ -263,25 +264,20 @@ class DatabaseManager {
             return [];
         }
         
+        if (this.isPostgres && !this.pgClient) {
+            console.error('PostgreSQL client is null, cannot execute query');
+            return [];
+        }
+        
+        if (!this.isPostgres && !this.db) {
+            console.error('SQLite database is null, cannot execute query');
+            return [];
+        }
+        
         if (this.isPostgres) {
-            if (!this.pgClient) {
-                console.warn('PostgreSQL client not available, skipping query');
-                return [];
-            }
-            if (!this.pgClient) {
-                console.error('PostgreSQL client is null, cannot execute query');
-                return [];
-            }
             const result = await this.pgClient.query(sql, params);
             return result.rows;
         } else {
-            if (!this.db) {
-                throw new Error('SQLite database connection is null - database initialization may have failed');
-            }
-            if (!this.db) {
-                console.error('SQLite database is null, cannot execute query');
-                return [];
-            }
             if (sql.toLowerCase().startsWith('select')) {
                 return await this.db.all(sql, params);
             } else {
@@ -297,25 +293,20 @@ class DatabaseManager {
             return null;
         }
         
+        if (this.isPostgres && !this.pgClient) {
+            console.error('PostgreSQL client is null, cannot execute get query');
+            return null;
+        }
+        
+        if (!this.isPostgres && !this.db) {
+            console.error('SQLite database is null, cannot execute get query');
+            return null;
+        }
+        
         if (this.isPostgres) {
-            if (!this.pgClient) {
-                console.warn('PostgreSQL client not available, skipping get query');
-                return null;
-            }
-            if (!this.pgClient) {
-                console.error('PostgreSQL client is null, cannot execute get query');
-                return null;
-            }
             const result = await this.pgClient.query(sql, params);
             return result.rows[0] || null;
         } else {
-            if (!this.db) {
-                throw new Error('SQLite database connection is null - database initialization may have failed');
-            }
-            if (!this.db) {
-                console.error('SQLite database is null, cannot execute get query');
-                return null;
-            }
             return await this.db.get(sql, params);
         }
     }

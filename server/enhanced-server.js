@@ -615,28 +615,38 @@ app.get('/api/trading/pairs', async (req, res) => {
     }
 });
 
-// Get trading pairs (duplicate endpoint for compatibility)
+// Get trading pairs endpoint
 app.get('/api/trading/pairs', async (req, res) => {
     try {
         const tradingPairs = {
+            pairs: {
+                'DOGE/USDT': { enabled: true, price: 0.08234, exchange: 'coinbase', volume24h: 1500000, change24h: 2.5 },
+                'SHIB/USDT': { enabled: true, price: 0.000012, exchange: 'coinbase', volume24h: 2500000, change24h: -1.2 },
+                'PEPE/USDT': { enabled: true, price: 0.0000089, exchange: 'coinbase', volume24h: 1200000, change24h: 5.7 },
+                'FLOKI/USDT': { enabled: true, price: 0.000156, exchange: 'kraken', volume24h: 800000, change24h: 3.2 },
+                'BONK/USDT': { enabled: true, price: 0.00001, exchange: 'binanceus', volume24h: 950000, change24h: -2.1 },
+                'WIF/USDT': { enabled: true, price: 0.0015, exchange: 'kraken', volume24h: 750000, change24h: 8.3 },
+                'MYRO/USDT': { enabled: true, price: 0.0005, exchange: 'binanceus', volume24h: 650000, change24h: -4.2 },
+                'POPCAT/USDT': { enabled: true, price: 0.0003, exchange: 'coinbase', volume24h: 550000, change24h: 6.7 }
+            },
             exchanges: {
                 coinbase: [
                     { symbol: 'DOGE/USDT', enabled: true, price: 0.08234 },
                     { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
                     { symbol: 'PEPE/USDT', enabled: true, price: 0.0000089 },
-                    { symbol: 'FLOKI/USDT', enabled: true, price: 0.000156 }
+                    { symbol: 'POPCAT/USDT', enabled: true, price: 0.0003 }
                 ],
                 kraken: [
                     { symbol: 'DOGE/USDT', enabled: true, price: 0.08235 },
                     { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
-                    { symbol: 'PEPE/USDT', enabled: false, price: 0.0000089 },
-                    { symbol: 'FLOKI/USDT', enabled: true, price: 0.000156 }
+                    { symbol: 'FLOKI/USDT', enabled: true, price: 0.000156 },
+                    { symbol: 'WIF/USDT', enabled: true, price: 0.0015 }
                 ],
                 binanceus: [
                     { symbol: 'DOGE/USDT', enabled: true, price: 0.08236 },
                     { symbol: 'SHIB/USDT', enabled: true, price: 0.000012 },
-                    { symbol: 'PEPE/USDT', enabled: true, price: 0.0000089 },
-                    { symbol: 'FLOKI/USDT', enabled: false, price: 0.000156 }
+                    { symbol: 'BONK/USDT', enabled: true, price: 0.00001 },
+                    { symbol: 'MYRO/USDT', enabled: true, price: 0.0005 }
                 ]
             }
         };
