@@ -1,21 +1,40 @@
 import ccxt from 'ccxt';
+import ccxtIntegration from './ccxtIntegration.js';
+import realDataTracker from './realDataTracker.js';
 
 class ExchangeService {
     constructor() {
         this.exchanges = new Map();
         this.paperTradingEnabled = true;
+        this.enforceRealDataOnly = true;
+        this.realDataValidated = false;
+        this.realDataCache = new Map();
+        this.priceUpdateInterval = null;
+        this.initialized = false;
         this.paperBalances = {
             'coinbase': { USD: 10000, BTC: 0, ETH: 0, DOGE: 0, SHIB: 0, PEPE: 0 },
             'kraken': { USD: 10000, BTC: 0, ETH: 0, DOGE: 0, SHIB: 0, PEPE: 0 },
             'gemini': { USD: 10000, BTC: 0, ETH: 0, DOGE: 0, SHIB: 0, PEPE: 0 },
             'binanceus': { USD: 10000, BTC: 0, ETH: 0, DOGE: 0, SHIB: 0, PEPE: 0 }
         };
-        this.lastPrices = new Map();
-        this.priceUpdateInterval = null;
+        this.tradeExecutionHistory = [];
     }
 
     async initialize() {
         console.log('🔄 Initializing Exchange Service...');
+        
+        // Initialize CCXT integration first
+        await ccxtIntegration.initializeAllExchanges();
+        
+        // Validate real data connections
+        this.realDataValidated = await realDataTracker.validateRealDataConnections();
+        
+        if (this.realDataValidated) {
+            console.log('✅ Real data connections validated');
+            this.startRealDataUpdates();
+        } else {
+            console.log('⚠️ No real data connections available');
+        }
         
         // Initialize supported US exchanges
         const exchangeConfigs = [
@@ -98,142 +117,261 @@ class ExchangeService {
             }
         }
 
-        // Start real-time price updates
-        this.startPriceUpdates();
+        this.initialized = true;
         
         console.log(`✅ Exchange Service initialized with ${this.exchanges.size} exchanges`);
     }
 
-    startPriceUpdates() {
-        // Update prices every 5 seconds
+    startRealDataUpdates() {
+        if (this.priceUpdateInterval) {
+            clearInterval(this.priceUpdateInterval);
+        }
+        
+        // Update real-time prices every 3 seconds for ML learning
         this.priceUpdateInterval = setInterval(async () => {
             await this.updateRealTimePrices();
-        }, 5000);
+        }, 3000);
         
-        console.log('📈 Started real-time price updates');
+        console.log('📈 Started real-time price updates for ML learning');
     }
 
     async updateRealTimePrices() {
-        const symbols = ['DOGE/USDT', 'SHIB/USDT', 'PEPE/USDT', 'FLOKI/USDT', 'BONK/USDT'];
+        if (!this.realDataValidated) {
+            console.log('⚠️ Skipping price updates - no validated real data connections');
+            return;
+        }
         
-        // Always use real API data from connected exchanges
-        for (const [exchangeId, exchangeData] of this.exchanges) {
-            if (!exchangeData.connected) continue;
-            
+        const symbols = ['DOGE/USDT', 'SHIB/USDT', 'PEPE/USDT', 'FLOKI/USDT', 'BONK/USDT', 'WIF/USDT', 'MYRO/USDT', 'POPCAT/USDT'];
+        const connectedExchanges = ccxtIntegration.getConnectedExchangeIds();
+        
+        console.log(`🔄 Updating prices for ${symbols.length} symbols across ${connectedExchanges.length} exchanges`);
+        
+        for (const exchangeId of connectedExchanges) {
             for (const symbol of symbols) {
                 try {
-                    let price, volume24h, change24h;
+                    const ticker = await ccxtIntegration.fetchRealTicker(exchangeId, symbol);
                     
-                    // Prioritize real exchange data
-                    if (exchangeData.instance) {
-                        // Try to get real price from exchange
-                        try {
-                            const ticker = await exchangeData.instance.fetchTicker(symbol);
-                            price = ticker.last || ticker.close || ticker.bid;
-                            volume24h = ticker.volume || ticker.quoteVolume || Math.random() * 10000000 + 1000000;
-                            change24h = ticker.percentage || ticker.change || (Math.random() - 0.5) * 10;
-                            console.log(`✅ Using real data for ${symbol} from ${exchangeId}: $${price}`);
-                        } catch (error) {
-                            // Fallback to simulated price if API fails
-                            console.warn(`Error fetching ${symbol} from ${exchangeId}, using fallback:`, error.message);
-                            const fallback = this.generateRealisticPrice(symbol, exchangeId);
-                            price = fallback.price;
-                            volume24h = fallback.volume24h;
-                            change24h = fallback.change24h;
-                        }
-                    } else {
-                        // Generate realistic simulated price
-                        const simulated = this.generateRealisticPrice(symbol, exchangeId);
-                        price = simulated.price;
-                        volume24h = simulated.volume24h;
-                        change24h = simulated.change24h;
-                    }
-                    
-                    // Store the price
-                    const priceKey = `${exchangeId}:${symbol}`;
-                    const previousPrice = this.lastPrices.get(priceKey) || price;
-                    
-                    this.lastPrices.set(priceKey, price);
-                    
-                    // Save to database if available
-                    if (global.databaseManager) {
-                        await global.databaseManager.saveExchangeData({
-                            exchange: exchangeId,
-                            symbol: symbol,
-                            price: price,
-                            volume24h: volume24h,
-                            change24h: change24h,
-                            bid: price * 0.999,
-                            ask: price * 1.001,
-                            timestamp: Date.now()
+                    if (ticker && ticker.isRealData) {
+                        const cacheKey = `${exchangeId}:${symbol}`;
+                        this.realDataCache.set(cacheKey, {
+                            ...ticker,
+                            validatedRealData: true,
+                            lastValidation: Date.now(),
+                            exchangeHealthStatus: 'VERIFIED'
                         });
+                        
+                        console.log(`✅ Real data cached: ${symbol} on ${exchangeId} = $${ticker.price.toFixed(6)}`);
                     }
-                    
                 } catch (error) {
-                    console.error(`❌ Error updating price for ${symbol} on ${exchangeId}:`, error.message);
+                    console.warn(`⚠️ Error fetching ${symbol} from ${exchangeId}:`, error.message);
                 }
             }
         }
+        
+        console.log(`📊 Real data cache updated: ${this.realDataCache.size} price points`);
     }
-
-    generateRealisticPrice(symbol, exchangeId) {
-        // Base prices for meme coins (realistic ranges)
-        // Use more stable base prices with smaller random variations
-        const baseData = {
-            'DOGE/USDT': { price: 0.10, range: 0.01, volume: 8500000 }, // $0.09 - $0.11
-            'SHIB/USDT': { price: 0.00001, range: 0.000001, volume: 12000000 }, // Small price
-            'PEPE/USDT': { price: 0.0000009, range: 0.0000001, volume: 7500000 }, // Very small
-            'FLOKI/USDT': { price: 0.00002, range: 0.000002, volume: 5000000 },
-            'BONK/USDT': { price: 0.000001, range: 0.0000001, volume: 3500000 },
-            'WIF/USDT': { price: 0.0015, range: 0.0001, volume: 2500000 },
-            'MYRO/USDT': { price: 0.0005, range: 0.00005, volume: 1800000 },
-            'POPCAT/USDT': { price: 0.0003, range: 0.00003, volume: 1200000 },
-            'TURBO/USDT': { price: 0.00004, range: 0.000004, volume: 900000 },
-            'MEME/USDT': { price: 0.0007, range: 0.00007, volume: 4500000 }
-        };
-        
-        const data = baseData[symbol] || { price: 0.0005, range: 0.00005, volume: 1000000 };
-        const basePrice = data.price + (Math.random() - 0.5) * data.range * 2;
-        const baseVolume = data.volume * (0.8 + Math.random() * 0.4); // 80-120% of base volume
-        
-        // Add small exchange-specific variations (0.1-0.5%)
-        const exchangeVariations = {
-            'coinbase': 1.0,
-            'kraken': 1.002,
-            'gemini': 0.998,
-            'binanceus': 1.001
-        };
-        
-        const variation = exchangeVariations[exchangeId] || 1.0;
-        basePrice *= variation;
-        
-        // Add small random fluctuation (±0.1%)
-        const fluctuation = 1 + (Math.random() - 0.5) * 0.002;
-        
-        // Generate realistic 24h change (-5% to +5%)
-        const change24h = (Math.random() - 0.5) * 10;
+    
+    getMarketData(exchange, symbol) {
+        const key = `${exchange}:${symbol}`;
+        return this.realDataCache.get(key) || null;
+    }
+    
+    getAllMarketData() {
+        return Array.from(this.realDataCache.values());
+    }
+    
+    getConnectedExchanges() {
+        return ccxtIntegration.getConnectedExchangeIds();
+    }
+    
+    getDataSourceStats() {
+        const totalPrices = this.realDataCache.size;
+        const validatedExchanges = ccxtIntegration.getConnectedExchangeIds();
+        const realDataCount = Array.from(this.realDataCache.values())
+            .filter(data => data.validatedRealData).length;
         
         return {
-            price: basePrice * variation * fluctuation,
-            volume24h: baseVolume,
-            change24h: change24h
+            totalPrices,
+            validatedExchanges,
+            realDataPercentage: totalPrices > 0 ? ((realDataCount / totalPrices) * 100).toFixed(1) : '0',
+            dataQualityScore: Math.min(100, (realDataCount / Math.max(1, totalPrices)) * 100)
         };
+    }
+            
+    async findArbitrageOpportunities(symbol, amount) {
+        if (!this.realDataValidated) {
+            throw new Error('Cannot find arbitrage opportunities without validated real data connections');
+        }
+        
+        const opportunities = [];
+        const realPrices = [];
+        
+        // Collect ONLY real data from connected exchanges
+        for (const exchangeId of this.getConnectedExchanges()) {
+            const marketData = this.getMarketData(exchangeId, symbol);
+            if (marketData && marketData.validatedRealData) {
+                realPrices.push({
+                    exchange: exchangeId,
+                    price: marketData.price,
+                    bid: marketData.bid,
+                    ask: marketData.ask,
+                    volume: marketData.volume24h,
+                    timestamp: marketData.timestamp,
+                    dataSource: 'VERIFIED_REAL'
+                });
+            }
+        }
+        
+        if (realPrices.length < 2) {
+            console.log(`⚠️ Need at least 2 exchanges with real data for arbitrage. Found: ${realPrices.length}`);
+            return [];
+        }
+        
+        // Find arbitrage opportunities using ONLY verified real data
+        realPrices.sort((a, b) => a.price - b.price);
+        
+        for (let i = 0; i < realPrices.length - 1; i++) {
+            for (let j = i + 1; j < realPrices.length; j++) {
+                const buyData = realPrices[i];
+                const sellData = realPrices[j];
+                
+                const priceDiff = sellData.price - buyData.price;
+                const profitPercent = (priceDiff / buyData.price) * 100;
+                
+                if (profitPercent > 0.1) { // Minimum 0.1% profit
+                    const grossProfit = amount * (priceDiff / buyData.price);
+                    const buyFeeRate = await this.getRealExchangeFee(buyData.exchange, 'taker');
+                    const sellFeeRate = await this.getRealExchangeFee(sellData.exchange, 'taker');
+                    const estimatedFees = (amount * buyData.price * buyFeeRate) + (amount * sellData.price * sellFeeRate);
+                    const netProfit = grossProfit - estimatedFees;
+                    
+                    if (netProfit > 0) {
+                        // Validate the opportunity
+                        const validation = await realDataTracker.validateArbitrageOpportunity({
+                            symbol,
+                            buyExchange: buyData.exchange,
+                            sellExchange: sellData.exchange,
+                            buyPrice: buyData.price,
+                            sellPrice: sellData.price,
+                            amount,
+                            netProfit,
+                            profitPercent,
+                            timestamp: Date.now()
+                        });
+                        
+                        opportunities.push({
+                            symbol,
+                            buyExchange: buyData.exchange,
+                            sellExchange: sellData.exchange,
+                            buyPrice: buyData.price,
+                            sellPrice: sellData.price,
+                            amount,
+                            grossProfit,
+                            estimatedFees,
+                            netProfit,
+                            profitPercent,
+                            timestamp: Date.now(),
+                            isRealArbitrage: true,
+                            buyDataSource: 'VERIFIED_REAL',
+                            sellDataSource: 'VERIFIED_REAL',
+                            dataFreshness: Math.max(
+                                Date.now() - buyData.timestamp,
+                                Date.now() - sellData.timestamp
+                            ),
+                            validation
+                        });
+                    }
+                }
+            }
+        }
+        
+        return opportunities.sort((a, b) => b.netProfit - a.netProfit);
+    }
+
+    async getRealExchangeFee(exchangeId, type) {
+        const realFees = {
+            coinbase: { maker: 0.005, taker: 0.005 },
+            kraken: { maker: 0.0016, taker: 0.0026 },
+            gemini: { maker: 0.001, taker: 0.0035 },
+            binanceus: { maker: 0.001, taker: 0.001 },
+            cryptocom: { maker: 0.004, taker: 0.004 }
+        };
+        
+        return realFees[exchangeId]?.[type] || 0.0025;
     }
 
     async getExchangeStatus() {
-        const status = {};
-        
-        for (const [id, data] of this.exchanges) {
-            status[id] = {
-                name: data.name,
-                connected: data.connected,
-                hasApiKeys: data.hasApiKeys,
-                error: data.error || null,
-                lastPing: Date.now()
-            };
+        return await ccxtIntegration.getConnectionStatus();
+    }
+    
+    async executePaperTrade(tradeData) {
+        if (!this.paperTradingEnabled) {
+            throw new Error('Paper trading is disabled');
         }
         
-        return status;
+        if (this.enforceRealDataOnly && !tradeData.isRealArbitrage) {
+            throw new Error('Cannot execute trade without verified real data');
+        }
+        
+        console.log(`🔍 Executing paper trade for ${tradeData.symbol} using VERIFIED REAL market data`);
+        
+        // Simulate realistic trade execution with slippage and timing
+        const outcome = realDataTracker.simulateRealisticTradeOutcome(tradeData);
+        
+        const trade = {
+            id: `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            symbol: tradeData.symbol,
+            buyExchange: tradeData.buyExchange,
+            sellExchange: tradeData.sellExchange,
+            amount: tradeData.amount,
+            buyPrice: tradeData.buyPrice,
+            sellPrice: tradeData.sellPrice,
+            expectedProfit: tradeData.netProfit,
+            actualProfit: outcome.actualProfit,
+            totalFees: outcome.actualFees,
+            buyFee: outcome.actualFees / 2,
+            sellFee: outcome.actualFees / 2,
+            buyFeeRate: await this.getRealExchangeFee(tradeData.buyExchange, 'taker'),
+            sellFeeRate: await this.getRealExchangeFee(tradeData.sellExchange, 'taker'),
+            mlConfidence: tradeData.mlConfidence || 0.75,
+            decidingModels: tradeData.decidingModels || ['Real Market Data'],
+            timestamp: Date.now(),
+            positionSize: tradeData.positionSize || 2.0,
+            isPaperTrade: true,
+            executionSuccess: outcome.success,
+            slippage: outcome.slippage,
+            executionTime: outcome.executionTime,
+            dataSource: 'VERIFIED_REAL',
+            netProfit: outcome.actualProfit
+        };
+        
+        // Record the trade for ML learning
+        this.tradeExecutionHistory.push(trade);
+        
+        // Keep only last 1000 trades
+        if (this.tradeExecutionHistory.length > 1000) {
+            this.tradeExecutionHistory = this.tradeExecutionHistory.slice(-1000);
+        }
+        
+        console.log(`📊 Paper trade executed: ${trade.symbol} - Expected: $${trade.expectedProfit.toFixed(2)}, Actual: $${trade.actualProfit.toFixed(2)}`);
+        
+        return trade;
+    }
+    
+    getAccurateStatistics() {
+        return realDataTracker.getAccurateStatistics();
+    }
+    
+    getSystemHealthReport() {
+        return realDataTracker.getSystemHealthReport();
+    }
+        
+    stop() {
+        if (this.priceUpdateInterval) {
+            clearInterval(this.priceUpdateInterval);
+            this.priceUpdateInterval = null;
+        }
+        console.log('⏹️ Exchange service stopped');
     }
 
     async getAllBalances() {
