@@ -1,4 +1,4 @@
-// src/App.tsx - Using your actual component file names
+// src/App.tsx - Complete fixed version with all runtime error fixes
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   TrendingUp, 
@@ -25,7 +25,7 @@ import {
   X
 } from 'lucide-react';
 
-// Import your actual components with correct names
+// Import your actual components
 import DashboardCard from './components/DashboardCard';
 import DashboardCustomizer from './components/DashboardCustomizer';
 import DatabaseStatus from './components/DatabaseStatus';
@@ -52,51 +52,154 @@ import TierEnforcement from './components/TierEnforcement';
 import TierManagement from './components/TierManagement';
 import ExchangeDataTester from './components/ExchangeDataTester';
 
-// Create wrapper components for missing ones or use alternatives
-const Dashboard = ({ ...props }: any) => (
-  <div className="space-y-6">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <PLCards {...props} />
-      <DashboardCard {...props} />
+// Complete Dashboard wrapper with all required props
+const Dashboard = ({ stats, trades, balance, mlModels, exchanges, isPaperTrading, isTrading, ...props }: any) => {
+  // Ensure stats has ALL required properties
+  const safeStats = {
+    totalTrades: 0,
+    profitLoss: 0,
+    winRate: 0,
+    totalVolume: 0,
+    successRate: 0,
+    activeAlerts: 0,
+    roi: 0,
+    weeklyPL: 0,
+    monthlyPL: 0,
+    dailyPL: 0,
+    bestTrade: 0,
+    worstTrade: 0,
+    avgWin: 0,
+    avgLoss: 0,
+    profitFactor: 0,
+    sharpeRatio: 0,
+    maxDrawdown: 0,
+    winStreak: 0,
+    lossStreak: 0,
+    totalFees: 0,
+    ...stats
+  };
+
+  // Ensure trades is always an array
+  const safeTrades = Array.isArray(trades) ? trades : [];
+  
+  // Ensure mlModels is always an array
+  const safeMLModels = Array.isArray(mlModels) ? mlModels : [];
+  
+  // Ensure exchanges is always an array
+  const safeExchanges = Array.isArray(exchanges) ? exchanges : [];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <PLCards 
+          stats={safeStats}
+          balance={balance || 10000}
+          isPaperTrading={isPaperTrading}
+        />
+        <DashboardCard 
+          stats={safeStats}
+          trades={safeTrades}
+          balance={balance || 10000}
+          isPaperTrading={isPaperTrading}
+          isTrading={isTrading}
+        />
+      </div>
+      <HotPairsTicker exchanges={safeExchanges} />
+      <AILearningTracker mlModels={safeMLModels} />
+      <RecentTrades trades={safeTrades} />
+      <PerformanceCharts 
+        trades={safeTrades}
+        stats={safeStats}
+      />
     </div>
-    <HotPairsTicker />
-    <AILearningTracker mlModels={props.mlModels} />
-    <RecentTrades trades={props.trades} />
-    <PerformanceCharts />
-  </div>
-);
+  );
+};
 
-const TradingCenter = ({ ...props }: any) => (
+// Complete TradingCenter wrapper
+const TradingCenter = ({ balance, isPaperTrading, isTrading, onStartTrading, onStopTrading, onExecuteTrade, exchanges, mlModels, tradingPairs, ...props }: any) => {
+  const safeTradingPairs = tradingPairs || { exchanges: {} };
+  const safeMLModels = Array.isArray(mlModels) ? mlModels : [];
+  const safeExchanges = Array.isArray(exchanges) ? exchanges : [];
+  
+  return (
+    <div className="space-y-6">
+      <TradingTab 
+        balance={balance}
+        isPaperTrading={isPaperTrading}
+        isTrading={isTrading}
+        onStartTrading={onStartTrading}
+        onStopTrading={onStopTrading}
+      />
+      <TradingControls 
+        isTrading={isTrading}
+        onStartTrading={onStartTrading}
+        onStopTrading={onStopTrading}
+        balance={balance}
+        isPaperTrading={isPaperTrading}
+      />
+      <TradingPairsManager 
+        tradingPairs={safeTradingPairs}
+        exchanges={safeExchanges}
+      />
+      <MLTradingAgent 
+        models={safeMLModels}
+        isTraining={false}
+      />
+    </div>
+  );
+};
+
+// Complete SettingsPanel wrapper
+const SettingsPanel = ({ isPaperTrading, onTogglePaperTrading, userTier, isAdmin, onResetStats }: any) => (
   <div className="space-y-6">
-    <TradingTab {...props} />
-    <TradingControls {...props} />
-    <TradingPairsManager {...props} />
-    <MLTradingAgent {...props} />
+    <TradingSettings 
+      isPaperTrading={isPaperTrading}
+      onTogglePaperTrading={onTogglePaperTrading}
+    />
+    <PersistentSettings 
+      onResetStats={onResetStats}
+    />
+    <TierConfigurationPanel 
+      userTier={userTier}
+      isAdmin={isAdmin}
+    />
+    <UserTierDisplay 
+      userTier={userTier}
+      isAdmin={isAdmin}
+    />
   </div>
 );
 
-const SettingsPanel = ({ ...props }: any) => (
-  <div className="space-y-6">
-    <TradingSettings {...props} />
-    <PersistentSettings {...props} />
-    <TierConfigurationPanel {...props} />
-    <UserTierDisplay {...props} />
-  </div>
-);
+const MLModelConfig = MLTradingAgent;
+const UpgradeModal = TierManagement;
 
-const MLModelConfig = MLTradingAgent; // Use MLTradingAgent as ML config
-const UpgradeModal = TierManagement; // Use TierManagement as upgrade modal
-
-// Hooks - create simple versions if they don't exist
+// Fixed hooks with complete initial state
 const useDraggableDashboard = () => {
-  const [cards] = useState([]);
+  const [cards, setCards] = useState([
+    { id: 'stats', visible: true, position: 0 },
+    { id: 'trades', visible: true, position: 1 },
+    { id: 'charts', visible: true, position: 2 },
+    { id: 'ml', visible: true, position: 3 }
+  ]);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  
   return {
     cards,
     isCustomizing,
-    toggleCardVisibility: () => {},
-    resetLayout: () => {},
-    getVisibleCards: () => [],
+    toggleCardVisibility: (cardId: string) => {
+      setCards(prev => prev.map(card => 
+        card.id === cardId ? { ...card, visible: !card.visible } : card
+      ));
+    },
+    resetLayout: () => {
+      setCards([
+        { id: 'stats', visible: true, position: 0 },
+        { id: 'trades', visible: true, position: 1 },
+        { id: 'charts', visible: true, position: 2 },
+        { id: 'ml', visible: true, position: 3 }
+      ]);
+    },
+    getVisibleCards: () => cards.filter(card => card.visible),
     toggleCustomization: () => setIsCustomizing(!isCustomizing)
   };
 };
@@ -109,11 +212,25 @@ const usePersistentStats = () => {
     totalVolume: 0,
     successRate: 0,
     activeAlerts: 0,
-    roi: 0
+    roi: 0,
+    weeklyPL: 0,
+    monthlyPL: 0,
+    dailyPL: 0,
+    bestTrade: 0,
+    worstTrade: 0,
+    avgWin: 0,
+    avgLoss: 0,
+    profitFactor: 0,
+    sharpeRatio: 0,
+    maxDrawdown: 0,
+    winStreak: 0,
+    lossStreak: 0,
+    totalFees: 0
   });
+  
   return {
     stats,
-    updateStats: (newStats: any) => setStats({ ...stats, ...newStats }),
+    updateStats: (newStats: any) => setStats(prev => ({ ...prev, ...newStats })),
     resetStats: () => setStats({
       totalTrades: 0,
       profitLoss: 0,
@@ -121,7 +238,20 @@ const usePersistentStats = () => {
       totalVolume: 0,
       successRate: 0,
       activeAlerts: 0,
-      roi: 0
+      roi: 0,
+      weeklyPL: 0,
+      monthlyPL: 0,
+      dailyPL: 0,
+      bestTrade: 0,
+      worstTrade: 0,
+      avgWin: 0,
+      avgLoss: 0,
+      profitFactor: 0,
+      sharpeRatio: 0,
+      maxDrawdown: 0,
+      winStreak: 0,
+      lossStreak: 0,
+      totalFees: 0
     })
   };
 };
@@ -136,7 +266,7 @@ const useDatabase = () => {
   };
 };
 
-// WebSocket hook inline
+// WebSocket hook with complete error handling
 const useWebSocketStats = () => {
   const [stats, setStats] = useState({
     totalTrades: 0,
@@ -269,7 +399,7 @@ const useWebSocketStats = () => {
         console.log('🎓 ML training complete:', message.data);
         setStats(prev => ({
           ...prev,
-          mlModelStats: message.data.models
+          mlModelStats: message.data.models || []
         }));
         break;
     }
@@ -369,7 +499,7 @@ interface Exchange {
 }
 
 export default function App() {
-  // Core state
+  // Core state with proper initialization
   const [isTrading, setIsTrading] = useState(() => {
     const saved = localStorage.getItem('memebot_is_trading');
     return saved ? JSON.parse(saved) : false;
@@ -390,14 +520,25 @@ export default function App() {
     return saved ? parseFloat(saved) : 5000;
   });
   
-  const [trades, setTrades] = useState<any[]>([]);
+  const [trades, setTrades] = useState<any[]>(() => {
+    const saved = localStorage.getItem('memebot_trades');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAdmin, setIsAdmin] = useState(true);
   const [userTier, setUserTier] = useState('enterprise');
   const [showReportGenerator, setShowReportGenerator] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [exchanges, setExchanges] = useState<any[]>([]);
-  const [mlModels, setMLModels] = useState<any[]>([]);
+  const [exchanges, setExchanges] = useState<Exchange[]>([]);
+  const [mlModels, setMLModels] = useState<MLModel[]>([]);
   const [tradingPairs, setTradingPairs] = useState<any>({ exchanges: {} });
   const [socialSignals, setSocialSignals] = useState<any[]>([]);
   
@@ -472,7 +613,8 @@ export default function App() {
       
       if (wsStats.mlModelStats && wsStats.mlModelStats.length > 0) {
         setMLModels(prev => {
-          return prev.map(model => {
+          const existingModels = prev.length > 0 ? prev : getDefaultMLModels();
+          return existingModels.map(model => {
             const realStats = wsStats.mlModelStats.find((m: any) => m.type === model.type);
             if (realStats) {
               return {
@@ -508,26 +650,36 @@ export default function App() {
     if (wsLastTrade) {
       console.log('💰 Trade Executed:', wsLastTrade);
       setTrades(prev => [wsLastTrade, ...prev].slice(0, 100));
+      
+      // Save to localStorage
+      const updatedTrades = [wsLastTrade, ...trades].slice(0, 100);
+      localStorage.setItem('memebot_trades', JSON.stringify(updatedTrades));
     }
   }, [wsLastTrade]);
   
   // Initialize data on mount
   useEffect(() => {
-    const savedTrades = localStorage.getItem('memebot_trades');
-    if (savedTrades) {
-      try {
-        setTrades(JSON.parse(savedTrades));
-      } catch (error) {
-        console.error('Error parsing saved trades:', error);
-      }
-    } else {
+    // Initialize trades if empty
+    if (trades.length === 0) {
       generateInitialTrades();
     }
     
+    // Initialize other data
     initializeMLModels();
     initializeExchanges();
     initializeSocialSignals();
   }, []);
+  
+  const getDefaultMLModels = (): MLModel[] => [
+    { type: 'linear_regression', name: 'Linear Regression', accuracy: 72.5, predictions: 1247, profitGenerated: 2847.32, enabled: true },
+    { type: 'polynomial_regression', name: 'Polynomial Regression', accuracy: 75.1, predictions: 1089, profitGenerated: 3245.67, enabled: true },
+    { type: 'moving_average', name: 'Moving Average', accuracy: 68.3, predictions: 1156, profitGenerated: 1923.45, enabled: true },
+    { type: 'rsi_momentum', name: 'RSI Momentum', accuracy: 79.2, predictions: 2341, profitGenerated: 5678.90, enabled: true },
+    { type: 'bollinger_bands', name: 'Bollinger Bands', accuracy: 81.7, predictions: 2156, profitGenerated: 6234.12, enabled: true },
+    { type: 'macd_signal', name: 'MACD Signal', accuracy: 77.8, predictions: 1987, profitGenerated: 4567.89, enabled: true },
+    { type: 'lstm_neural', name: 'LSTM Neural Network', accuracy: 85.4, predictions: 3456, profitGenerated: 12345.67, enabled: true },
+    { type: 'ensemble', name: 'Ensemble Meta-Model', accuracy: 91.3, predictions: 5678, profitGenerated: 34567.90, enabled: true }
+  ];
   
   const generateInitialTrades = () => {
     const coins = ['DOGE', 'SHIB', 'PEPE', 'FLOKI', 'BONK'];
@@ -547,67 +699,63 @@ export default function App() {
   };
   
   const initializeMLModels = () => {
-    const models: MLModel[] = [
-      { type: 'linear_regression', name: 'Linear Regression', accuracy: 72.5, predictions: 1247, profitGenerated: 2847.32, enabled: true },
-      { type: 'polynomial_regression', name: 'Polynomial Regression', accuracy: 75.1, predictions: 1089, profitGenerated: 3245.67, enabled: true },
-      { type: 'moving_average', name: 'Moving Average', accuracy: 68.3, predictions: 1156, profitGenerated: 1923.45, enabled: true },
-      { type: 'rsi_momentum', name: 'RSI Momentum', accuracy: 79.2, predictions: 2341, profitGenerated: 5678.90, enabled: true },
-      { type: 'bollinger_bands', name: 'Bollinger Bands', accuracy: 81.7, predictions: 2156, profitGenerated: 6234.12, enabled: true },
-      { type: 'macd_signal', name: 'MACD Signal', accuracy: 77.8, predictions: 1987, profitGenerated: 4567.89, enabled: true },
-      { type: 'lstm_neural', name: 'LSTM Neural Network', accuracy: 85.4, predictions: 3456, profitGenerated: 12345.67, enabled: true },
-      { type: 'ensemble', name: 'Ensemble Meta-Model', accuracy: 91.3, predictions: 5678, profitGenerated: 34567.90, enabled: true }
-    ];
-    setMLModels(models);
+    if (mlModels.length === 0) {
+      setMLModels(getDefaultMLModels());
+    }
   };
   
   const initializeExchanges = () => {
-    const exchangeList: Exchange[] = [
-      {
-        id: 'coinbase',
-        name: 'Coinbase Pro',
-        connected: true,
-        hasKeys: true,
-        enabled: true,
-        fees: { maker: 0.005, taker: 0.005 },
-        totalPairs: 200,
-        enabledPairs: 8,
-        tradingHours: '24/7',
-        apiLimits: { requestsPerSecond: 10, requestsPerDay: 10000 }
-      },
-      {
-        id: 'kraken',
-        name: 'Kraken',
-        connected: true,
-        hasKeys: true,
-        enabled: true,
-        fees: { maker: 0.0016, taker: 0.0026 },
-        totalPairs: 180,
-        enabledPairs: 8,
-        tradingHours: '24/7',
-        apiLimits: { requestsPerSecond: 1, requestsPerDay: 5000 }
-      },
-      {
-        id: 'binanceus',
-        name: 'Binance US',
-        connected: true,
-        hasKeys: true,
-        enabled: true,
-        fees: { maker: 0.001, taker: 0.001 },
-        totalPairs: 150,
-        enabledPairs: 8,
-        tradingHours: '24/7',
-        apiLimits: { requestsPerSecond: 20, requestsPerDay: 100000 }
-      }
-    ];
-    setExchanges(exchangeList);
+    if (exchanges.length === 0) {
+      const exchangeList: Exchange[] = [
+        {
+          id: 'coinbase',
+          name: 'Coinbase Pro',
+          connected: true,
+          hasKeys: true,
+          enabled: true,
+          fees: { maker: 0.005, taker: 0.005 },
+          totalPairs: 200,
+          enabledPairs: 8,
+          tradingHours: '24/7',
+          apiLimits: { requestsPerSecond: 10, requestsPerDay: 10000 }
+        },
+        {
+          id: 'kraken',
+          name: 'Kraken',
+          connected: true,
+          hasKeys: true,
+          enabled: true,
+          fees: { maker: 0.0016, taker: 0.0026 },
+          totalPairs: 180,
+          enabledPairs: 8,
+          tradingHours: '24/7',
+          apiLimits: { requestsPerSecond: 1, requestsPerDay: 5000 }
+        },
+        {
+          id: 'binanceus',
+          name: 'Binance US',
+          connected: true,
+          hasKeys: true,
+          enabled: true,
+          fees: { maker: 0.001, taker: 0.001 },
+          totalPairs: 150,
+          enabledPairs: 8,
+          tradingHours: '24/7',
+          apiLimits: { requestsPerSecond: 20, requestsPerDay: 100000 }
+        }
+      ];
+      setExchanges(exchangeList);
+    }
   };
   
   const initializeSocialSignals = () => {
-    setSocialSignals([
-      { platform: 'Twitter', followers: 125000, sentiment: 85, trending: true },
-      { platform: 'Reddit', members: 89000, sentiment: 72, trending: false },
-      { platform: 'Telegram', members: 45000, sentiment: 91, trending: true }
-    ]);
+    if (socialSignals.length === 0) {
+      setSocialSignals([
+        { platform: 'Twitter', followers: 125000, sentiment: 85, trending: true },
+        { platform: 'Reddit', members: 89000, sentiment: 72, trending: false },
+        { platform: 'Telegram', members: 45000, sentiment: 91, trending: true }
+      ]);
+    }
   };
   
   // Trading controls with WebSocket
@@ -622,6 +770,7 @@ export default function App() {
       
       wsStartTrading(tradingParams);
       setIsTrading(true);
+      localStorage.setItem('memebot_is_trading', 'true');
       
       syncTradingState({
         isTrading: true,
@@ -636,6 +785,7 @@ export default function App() {
     if (isTrading) {
       wsStopTrading();
       setIsTrading(false);
+      localStorage.setItem('memebot_is_trading', 'false');
       
       syncTradingState({
         isTrading: false,
@@ -677,8 +827,10 @@ export default function App() {
     
     if (isPaperTrading) {
       setBalance(newBalance);
+      localStorage.setItem('memebot_balance', newBalance.toString());
     } else {
       setLiveBalance(newBalance);
+      localStorage.setItem('memebot_live_balance', newBalance.toString());
     }
     
     updateStats({
@@ -703,6 +855,13 @@ export default function App() {
     { id: 'charts', name: 'Charts', icon: Activity }
   ];
   
+  // Tier usage data for TierEnforcement
+  const tierUsage = {
+    tradesUsed: persistentStats.totalTrades || 0,
+    modelsActive: mlModels.filter(m => m.enabled).length || 0,
+    exchangesConnected: exchanges.filter(e => e.connected).length || 0
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-6">
@@ -724,6 +883,8 @@ export default function App() {
                 <DashboardCustomizer 
                   isCustomizing={isCustomizing}
                   onToggle={toggleCustomization}
+                  cards={cards}
+                  onToggleCard={toggleCardVisibility}
                 />
               )}
               
@@ -909,7 +1070,10 @@ export default function App() {
           {activeTab === 'charts' && (
             <div className="space-y-6">
               <VisualChartsTab />
-              <PerformanceCharts />
+              <PerformanceCharts 
+                trades={trades}
+                stats={persistentStats}
+              />
             </div>
           )}
         </main>
@@ -936,8 +1100,11 @@ export default function App() {
           />
         )}
         
-        {/* Tier enforcement overlay */}
-        <TierEnforcement userTier={userTier} />
+        {/* Tier enforcement overlay - with proper usage data */}
+        <TierEnforcement 
+          userTier={userTier}
+          usage={tierUsage}
+        />
       </div>
     </div>
   );
