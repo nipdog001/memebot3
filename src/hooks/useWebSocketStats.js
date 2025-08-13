@@ -39,9 +39,21 @@ export const useWebSocketStats = () => {
     }
     
     // Socket.IO connection URL
-    const serverUrl = process.env.NODE_ENV === 'production' 
-      ? `${window.location.protocol}//${window.location.hostname}`
-      : `${window.location.protocol}//${window.location.hostname}:3001`;
+    let serverUrl;
+    if (process.env.NODE_ENV === 'production') {
+      serverUrl = window.location.origin;
+    } else {
+      // In development/WebContainer, replace the frontend port with backend port
+      const hostname = window.location.hostname;
+      const protocol = window.location.protocol;
+      
+      // Handle WebContainer hostnames that include port info
+      if (hostname.includes('--3000--')) {
+        serverUrl = `${protocol}//${hostname.replace('--3000--', '--3001--')}`;
+      } else {
+        serverUrl = `${protocol}//${hostname}:3001`;
+      }
+    }
     
     console.log('🔌 Connecting to Socket.IO server:', serverUrl);
     

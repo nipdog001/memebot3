@@ -45,8 +45,20 @@ class ExchangeDataService {
     private isDemo = false;
     
     constructor() {
-        // Hardcode for now to avoid Vite issues
-        this.baseURL = 'http://localhost:3002';
+        // Construct proper backend URL
+        if (process.env.NODE_ENV === 'production') {
+            this.baseURL = window.location.origin;
+        } else {
+            // In development/WebContainer, replace frontend port with backend port
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            
+            if (hostname.includes('--3000--')) {
+                this.baseURL = `${protocol}//${hostname.replace('--3000--', '--3001--')}`;
+            } else {
+                this.baseURL = `${protocol}//${hostname}:3001`;
+            }
+        }
         console.log(`🔧 ExchangeDataService initialized with baseURL: ${this.baseURL}`);
     }
 
