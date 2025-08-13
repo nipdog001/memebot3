@@ -378,26 +378,29 @@ const useWebSocketStats = () => {
       return;
     }
     
-    // Use the same host as the frontend but on port 3001 for development
+    // Fix WebSocket URL construction for Railway deployment
     let wsUrl;
     if (process.env.NODE_ENV === 'production') {
-      wsUrl = `wss://${window.location.host}/ws`;
+      // In production (Railway), use the same host with wss protocol
+      wsUrl = `wss://${window.location.host}`;
     } else {
       const hostname = window.location.hostname;
       // Handle WebContainer hostnames with embedded port numbers
       if (hostname.includes('--') && hostname.includes('webcontainer')) {
         // Replace the embedded port number with 3001
         const backendHostname = hostname.replace(/--3000--/, '--3001--');
-        wsUrl = `ws://${backendHostname}/ws`;
+        wsUrl = `ws://${backendHostname}`;
       } else {
-        wsUrl = `ws://${hostname}:3001/ws`;
+        wsUrl = `ws://${hostname}:3001`;
       }
     }
     
     console.log('🔌 Connecting to WebSocket:', wsUrl);
     
     try {
-      ws.current = new WebSocket(wsUrl);
+      // Add /ws path to the WebSocket URL
+      const fullWsUrl = wsUrl + '/ws';
+      ws.current = new WebSocket(fullWsUrl);
       
       ws.current.onopen = () => {
         console.log('✅ WebSocket connected');
@@ -419,7 +422,8 @@ const useWebSocketStats = () => {
       };
       
       ws.current.onerror = (error) => {
-        console.warn('⚠️ WebSocket connection issue, this is normal during startup');
+        console.warn('⚠️ WebSocket connection failed - server may not have WebSocket support enabled');
+        // Don't treat this as a critical error, continue without WebSocket
       };
       
       ws.current.onclose = () => {
@@ -427,7 +431,9 @@ const useWebSocketStats = () => {
         setIsConnected(false);
         ws.current = null;
         
-        if (reconnectAttempts.current < maxReconnectAttempts) {
+        // Only attempt reconnect in development or if we had a successful connection before
+        if (reconnectAttempts.current < maxReconnectAttempts && 
+            (process.env.NODE_ENV !== 'production' || reconnectAttempts.current === 0)) {
           reconnectAttempts.current++;
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
           console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current}/${maxReconnectAttempts})`);
@@ -435,10 +441,12 @@ const useWebSocketStats = () => {
           reconnectTimeout.current = setTimeout(() => {
             connect();
           }, delay);
+        } else {
+          console.log('⚠️ WebSocket connection failed - continuing without real-time updates');
         }
       };
     } catch (error) {
-      console.warn('WebSocket creation failed, will retry:', error.message);
+      console.warn('WebSocket creation failed - continuing without real-time updates:', error.message);
       console.error('Failed to create WebSocket connection:', error);
       setIsConnected(false);
     }
