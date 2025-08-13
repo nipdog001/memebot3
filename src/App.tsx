@@ -634,6 +634,14 @@ export default function App() {
   const [tradingPairs, setTradingPairs] = useState<any>({ exchanges: {} });
   const [socialSignals, setSocialSignals] = useState<any[]>([]);
   
+  // Balance update handler for ExchangeManager
+  const handleBalanceUpdate = (totalBalance: number, exchangeBalances: any[]) => {
+    if (!isPaperTrading) {
+      setLiveBalance(totalBalance);
+      localStorage.setItem('memebot_live_balance', totalBalance.toString());
+    }
+  };
+  
   // Use hooks
   const {
     cards,
@@ -1127,6 +1135,8 @@ export default function App() {
               <ExchangeManager
                 exchanges={exchanges}
                 onExchangeUpdate={setExchanges}
+                onBalanceUpdate={handleBalanceUpdate}
+                isPaperTrading={isPaperTrading}
                 userTier={userTier}
                 isAdmin={isAdmin}
               />

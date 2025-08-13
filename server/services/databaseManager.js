@@ -54,8 +54,8 @@ class DatabaseManager {
             ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
         });
         
-        // Test connection
-        await this.pgClient.query('SELECT NOW()');
+        // Test connection with a simple query
+        await this.pgClient.query('SELECT 1');
         this.isPostgres = true;
         console.log('✅ Connected to PostgreSQL on Railway');
     }
@@ -91,7 +91,7 @@ class DatabaseManager {
             await this.pgClient.query(`
                 CREATE TABLE IF NOT EXISTS trading_stats (
                     id SERIAL PRIMARY KEY,
-                    user_id TEXT DEFAULT 'default',
+                    user_id TEXT UNIQUE DEFAULT 'default',
                     total_trades INTEGER DEFAULT 0,
                     winning_trades INTEGER DEFAULT 0,
                     losing_trades INTEGER DEFAULT 0,
