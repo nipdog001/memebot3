@@ -63,10 +63,15 @@ class DatabaseManager {
     async initializeSQLite() {
         console.log('💾 Using local SQLite database...');
         
-        const dataDir = path.join(__dirname, '../../data');
+        const dataDir = path.join(process.cwd(), 'data');
+        
+        // Ensure data directory exists
+        if (!require('fs').existsSync(dataDir)) {
+            require('fs').mkdirSync(dataDir, { recursive: true });
+        }
         
         this.db = await open({
-            filename: path.join(dataDir, 'memebot.db'),
+            filename: path.join(dataDir, 'trading.db'),
             driver: SQLite3Driver.Database
         });
         

@@ -161,7 +161,7 @@ function startStatsUpdateLoop() {
             globalStats.lastUpdate = Date.now();
             
             // Save to database
-            await databaseManager.saveStats(globalStats);
+            await databaseManager.saveTradingStats('default', globalStats);
             
             // Broadcast updates
             broadcastToClients({

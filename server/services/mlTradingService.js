@@ -162,6 +162,13 @@ class MLTradingService extends EventEmitter {
     async startDataCollection() {
         console.log('📊 Starting real-time data collection...');
         
+        // Check if we should use mock data instead of real exchanges
+        if (process.env.PAPER_TRADING === 'true' || process.env.NODE_ENV !== 'production') {
+            console.log('📊 Using mock data collection for development/paper trading mode');
+            this.startMockDataCollection();
+            return;
+        }
+        
         try {
         // Connect to exchanges via CCXT
         const exchangeIds = ['coinbase', 'kraken', 'binanceus', 'cryptocom'];
