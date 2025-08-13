@@ -309,6 +309,36 @@ class ExchangeDataService {
         }
     }
 
+    // Get connection status (alias for getExchangeStatus for backward compatibility)
+    async getConnectionStatus(): Promise<Record<string, ExchangeStatus>> {
+        return await this.getExchangeStatus();
+    }
+
+    // Toggle trading pair status
+    async toggleTradingPair(symbol: string, enabled: boolean): Promise<boolean> {
+        try {
+            const response = await axios.post(`${this.baseURL}/api/trading/pairs/toggle`, {
+                symbol,
+                enabled
+            });
+            return response.data.success || false;
+        } catch (error: any) {
+            console.error(`❌ Error toggling trading pair ${symbol}:`, error.message);
+            return false;
+        }
+    }
+
+    // Get trading pairs from backend
+    async getTradingPairs(): Promise<any> {
+        try {
+            const response = await axios.get(`${this.baseURL}/api/trading/pairs`);
+            return response.data;
+        } catch (error: any) {
+            console.error('❌ Error fetching trading pairs:', error.message);
+            return null;
+        }
+    }
+
     // Get market data for a symbol
     async getMarketData(symbol: string): Promise<any> {
         try {

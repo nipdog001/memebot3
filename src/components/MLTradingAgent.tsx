@@ -148,17 +148,26 @@ export default function MLTradingAgent({
   }, [onTradeExecuted]);
 
   // Update real data status
-  const updateRealDataStatus = () => {
-    const connectionStatus = exchangeDataService.getConnectionStatus();
-    const connectedExchanges = exchangeDataService.getConnectedExchanges();
-    const allMarketData = exchangeDataService.getAllMarketData();
+  const updateRealDataStatus = async () => {
+    try {
+      const connectionStatus = await exchangeDataService.getConnectionStatus();
+      const connectedExchanges = await exchangeDataService.getConnectedExchanges();
     
-    setRealDataStatus({
-      isUsingRealData: connectedExchanges.length > 0,
-      lastUpdate: new Date(),
-      dataPoints: allMarketData.length,
-      apiStatus: connectedExchanges.length > 0 ? 'connected' : 'fallback'
-    });
+      setRealDataStatus({
+        isUsingRealData: connectedExchanges.length > 0,
+        lastUpdate: new Date(),
+        dataPoints: Object.keys(connectionStatus).length,
+        apiStatus: connectedExchanges.length > 0 ? 'connected' : 'fallback'
+      });
+    } catch (error) {
+      console.error('Error updating real data status:', error);
+      setRealDataStatus({
+        isUsingRealData: false,
+        lastUpdate: null,
+        dataPoints: 0,
+        apiStatus: 'error'
+      });
+    }
   };
 
   // Load learned model data to improve trading decisions

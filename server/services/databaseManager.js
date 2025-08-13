@@ -262,6 +262,10 @@ class DatabaseManager {
             return result.rows;
         } else {
             if (!this.db) {
+                console.error('SQLite database connection is null, cannot execute query');
+                return [];
+            }
+            if (!this.db) {
                 console.warn('SQLite database not available, skipping query');
                 return [];
             }
@@ -288,6 +292,10 @@ class DatabaseManager {
             const result = await this.pgClient.query(sql, params);
             return result.rows[0] || null;
         } else {
+            if (!this.db) {
+                console.error('SQLite database connection is null, cannot execute get query');
+                return null;
+            }
             if (!this.db) {
                 console.warn('SQLite database not available, skipping get query');
                 return null;

@@ -14,6 +14,7 @@ import {
   Info,
   Save
 } from 'lucide-react';
+import exchangeDataService from '../services/exchangeDataService';
 
 interface TradingPair {
   symbol: string;
@@ -51,10 +52,8 @@ export default function TradingPairsManager() {
     
     try {
       // Try to load from server
-      const response = await fetch('/api/trading/pairs');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.pairs) {
+      const data = await exchangeDataService.getTradingPairs();
+      if (data && data.pairs) {
           // Convert server format to component format
           const formattedPairs = Object.entries(data.pairs).map(([symbol, pairData]: [string, any]) => ({
             symbol,
@@ -71,7 +70,6 @@ export default function TradingPairsManager() {
           setPairs(formattedPairs);
           setLastUpdated(new Date());
           console.log('Loaded trading pairs from server:', formattedPairs.length);
-        }
       } else {
         // Fallback to localStorage
         const savedPairs = localStorage.getItem('tradingPairs');
@@ -157,6 +155,14 @@ export default function TradingPairsManager() {
     const updatedPairs = pairs.map(pair => 
       pair.symbol === symbol ? { ...pair, enabled: !pair.enabled } : pair
     );
+    
+    // Update backend
+    const targetPair = updatedPairs.find(p => p.symbol === symbol);
+    if (targetPair) {
+      exchangeDataService.toggleTradingPair(symbol, targetPair.enabled).catch(error => {
+        console.error('Failed to update backend:', error);
+      });
+    }
     
     const tradingPairsObj = {
       exchanges: {
