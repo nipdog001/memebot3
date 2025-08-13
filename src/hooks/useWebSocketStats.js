@@ -59,8 +59,11 @@ export const useWebSocketStats = () => {
     
     try {
       ws.current = io(serverUrl, {
-        path: '/ws',
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        forceNew: true,
+        reconnection: true,
+        timeout: 20000,
+        autoConnect: true
       });
       
       ws.current.on('connect', () => {

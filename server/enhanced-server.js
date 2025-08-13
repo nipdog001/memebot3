@@ -24,13 +24,14 @@ const server = http.createServer(app);
 
 // Create Socket.IO server for real-time updates
 const io = new Server(server, {
-    path: '/ws',
     cors: {
         origin: process.env.NODE_ENV === 'production' 
             ? process.env.FRONTEND_URL || '*'
             : true,
         credentials: true
-    }
+    },
+    transports: ['websocket', 'polling'],
+    allowEIO3: true
 });
 
 // Middleware

@@ -391,7 +391,7 @@ const useWebSocketStats = () => {
       };
       
       ws.current.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
+        console.warn('⚠️ WebSocket connection issue, this is normal during startup');
       };
       
       ws.current.onclose = () => {
@@ -408,7 +408,7 @@ const useWebSocketStats = () => {
             connect();
           }, delay);
         }
-      };
+      console.warn('WebSocket creation failed, will retry:', error.message);
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
       setIsConnected(false);
