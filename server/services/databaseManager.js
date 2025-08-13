@@ -75,18 +75,22 @@ class DatabaseManager {
                 require('fs').mkdirSync(dataDir, { recursive: true });
             }
             
+            // Use the sqlite package's open function properly
+            const dbPath = path.join(dataDir, 'trading.db');
             this.db = await open({
-                filename: path.join(dataDir, 'trading.db'),
+                filename: dbPath,
                 driver: SQLite3Driver.Database
             });
+            
+            // Verify the connection by running a simple query
+            await this.db.get('SELECT 1');
             
             this.isPostgres = false;
             console.log('✅ Connected to local SQLite');
         } catch (error) {
             console.error('❌ Failed to initialize SQLite:', error);
             this.db = null;
-            this.db = null;
-            throw new Error(`SQLite initialization failed: ${error.message}`);
+            throw error;
         }
     }
 
@@ -244,13 +248,7 @@ class DatabaseManager {
             // Check if we have existing data in the database
             const existingStats = await this.getTradingStats('default');
             
-            if (existingStats && existingStats.totalTrades > 0) {
-                console.log('📊 Found existing data, syncing...');
-                
-                // Emit event to update frontend with existing data
-                if (global.io) {
-                    global.io.emit('existing_data', existingStats);
-                }
+                await this.initializeSQLite();
             }
         } catch (error) {
             console.log('No existing data to sync');
