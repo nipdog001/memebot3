@@ -430,7 +430,7 @@ interface SubscriptionTier {
   enabled: boolean;
 }
 
-const DEFAULT_TIERS: SubscriptionTier[] = [
+export const DEFAULT_TIERS: SubscriptionTier[] = [
   {
     id: 'basic',
     name: 'Basic',

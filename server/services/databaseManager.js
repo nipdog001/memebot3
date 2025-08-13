@@ -264,6 +264,10 @@ class DatabaseManager {
                 console.warn('PostgreSQL client not available, skipping query');
                 return [];
             }
+            if (!this.pgClient) {
+                console.error('PostgreSQL client is null, cannot execute query');
+                return [];
+            }
             const result = await this.pgClient.query(sql, params);
             return result.rows;
         } else {
@@ -272,7 +276,7 @@ class DatabaseManager {
                 return [];
             }
             if (!this.db) {
-                console.warn('SQLite database not available, skipping query');
+                console.error('SQLite database is null, cannot execute query');
                 return [];
             }
             if (sql.toLowerCase().startsWith('select')) {
@@ -295,6 +299,10 @@ class DatabaseManager {
                 console.warn('PostgreSQL client not available, skipping get query');
                 return null;
             }
+            if (!this.pgClient) {
+                console.error('PostgreSQL client is null, cannot execute get query');
+                return null;
+            }
             const result = await this.pgClient.query(sql, params);
             return result.rows[0] || null;
         } else {
@@ -303,7 +311,7 @@ class DatabaseManager {
                 return null;
             }
             if (!this.db) {
-                console.warn('SQLite database not available, skipping get query');
+                console.error('SQLite database is null, cannot execute get query');
                 return null;
             }
             return await this.db.get(sql, params);
@@ -315,6 +323,17 @@ class DatabaseManager {
         try {
             if (!this.isInitialized) {
                 console.warn('Database not initialized, cannot save trading stats');
+                return false;
+            }
+            
+            // Additional check for actual database connections
+            if (this.isPostgres && !this.pgClient) {
+                console.error('PostgreSQL client is null, cannot save trading stats');
+                return false;
+            }
+            
+            if (!this.isPostgres && !this.db) {
+                console.error('SQLite database is null, cannot save trading stats');
                 return false;
             }
             

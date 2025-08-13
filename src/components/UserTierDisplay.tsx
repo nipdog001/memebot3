@@ -70,7 +70,7 @@ export default function UserTierDisplay({
   const [selectedBilling, setSelectedBilling] = useState<'monthly' | 'yearly'>('monthly');
   const [showUsageDetails, setShowUsageDetails] = useState(false);
 
-  const currentTier = availableTiers.find(tier => tier.id === userSubscription.currentTier);
+  const currentTier = (availableTiers || []).find(tier => tier.id === userSubscription.currentTier);
   const isTrialActive = userSubscription.status === 'trial' && (userSubscription.trialDaysLeft || 0) > 0;
   const isExpired = userSubscription.status === 'expired';
 

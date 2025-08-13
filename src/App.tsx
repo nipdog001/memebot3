@@ -1163,6 +1163,7 @@ export default function App() {
               userTier={userTier}
               isAdmin={isAdmin}
               onResetStats={resetStats}
+              userSubscription={userSubscription}
             />
           )}
           

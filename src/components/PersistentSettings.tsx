@@ -379,7 +379,13 @@ export default function PersistentSettings({ onSettingsChange, userTier, isAdmin
           exchanges: -1
         };
       default:
-        return getTierLimits();
+        return {
+          maxTradeSize: 1000,
+          maxDailyTrades: 10,
+          mlModels: 3,
+          socialPlatforms: 0,
+          exchanges: 1
+        };
     }
   };
 
