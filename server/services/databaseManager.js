@@ -63,20 +63,26 @@ class DatabaseManager {
     async initializeSQLite() {
         console.log('💾 Using local SQLite database...');
         
-        const dataDir = path.join(process.cwd(), 'data');
-        
-        // Ensure data directory exists
-        if (!require('fs').existsSync(dataDir)) {
-            require('fs').mkdirSync(dataDir, { recursive: true });
+        try {
+            const dataDir = path.join(process.cwd(), 'data');
+            
+            // Ensure data directory exists
+            if (!require('fs').existsSync(dataDir)) {
+                require('fs').mkdirSync(dataDir, { recursive: true });
+            }
+            
+            this.db = await open({
+                filename: path.join(dataDir, 'trading.db'),
+                driver: SQLite3Driver.Database
+            });
+            
+            this.isPostgres = false;
+            console.log('✅ Connected to local SQLite');
+        } catch (error) {
+            console.error('❌ Failed to initialize SQLite:', error);
+            this.db = null;
+            throw error;
         }
-        
-        this.db = await open({
-            filename: path.join(dataDir, 'trading.db'),
-            driver: SQLite3Driver.Database
-        });
-        
-        this.isPostgres = false;
-        console.log('✅ Connected to local SQLite');
     }
 
     async createTables() {
